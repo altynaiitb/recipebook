@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useRecipes } from '../context/RecipeContext'
+import { useFavorites } from '../context/FavoritesContext'
 import WindowSize from '../components/WindowSize'
 
 // ============================================
@@ -10,6 +11,8 @@ import WindowSize from '../components/WindowSize'
 
 export default function HomePage() {
   const { stats, isLoading } = useRecipes()
+  // LAB 5 (Задача 11): favorites count from split FavoritesContext
+  const { favoritesCount } = useFavorites()
 
   return (
     <div className="page home-page">
@@ -49,7 +52,8 @@ export default function HomePage() {
 
             <div className="stat-card favorite">
               <div className="stat-icon">❤️</div>
-              <div className="stat-value">{stats.favorites}</div>
+              {/* Задача 11: from FavoritesContext */}
+              <div className="stat-value">{favoritesCount}</div>
               <div className="stat-label">Favorites</div>
             </div>
 

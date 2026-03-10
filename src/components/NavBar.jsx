@@ -1,6 +1,7 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { useRecipes } from '../context/RecipeContext'
+import { useFavorites } from '../context/FavoritesContext'
 
 // ============================================
 // LAB 4 REQUIREMENT: Navigation Component
@@ -10,6 +11,8 @@ import { useRecipes } from '../context/RecipeContext'
 
 export default function NavBar() {
   const { stats } = useRecipes()
+  // LAB 5 (Задача 11): favorites count from the split FavoritesContext
+  const { favoritesCount } = useFavorites()
 
   return (
     <nav className="navbar">
@@ -45,8 +48,8 @@ export default function NavBar() {
           >
             <span className="nav-icon">👤</span>
             <span className="nav-text">Profile</span>
-            {stats.favorites > 0 && (
-              <span className="nav-badge favorite">{stats.favorites}</span>
+            {favoritesCount > 0 && (
+              <span className="nav-badge favorite">{favoritesCount}</span>
             )}
           </NavLink>
         </li>

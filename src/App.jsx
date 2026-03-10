@@ -1,20 +1,18 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { Routes, Route } from 'react-router-dom'
 
 // Components
 import NavBar from './components/NavBar'
 
-// Pages
-import HomePage from './pages/HomePage'
-import RecipesPage from './pages/RecipesPage'
-import ProfilePage from './pages/ProfilePage'
-import NotFoundPage from './pages/NotFoundPage'
-
 // ============================================
-// LAB 4 REQUIREMENT: React Router Setup
-// App component now serves as the main layout
-// with navigation and route definitions
+// LAB 5 REQUIREMENT (Задача 10): Lazy Loading
+// Pages are loaded on demand, not bundled upfront.
+// React.lazy + Suspense — code splitting per route.
 // ============================================
+const HomePage    = lazy(() => import('./pages/HomePage'))
+const RecipesPage = lazy(() => import('./pages/RecipesPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 export default function App() {
   return (
@@ -22,13 +20,22 @@ export default function App() {
       {/* Navigation - visible on all pages */}
       <NavBar />
 
-      {/* Route Definitions */}
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/recipes" element={<RecipesPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      {/* Suspense wraps all lazy routes with a fallback spinner */}
+      <Suspense
+        fallback={
+          <div className="loading" style={{ marginTop: '4rem' }}>
+            <div className="spinner" aria-hidden></div>
+            <div className="loading-text">Loading page…</div>
+          </div>
+        }
+      >
+        <Routes>
+          <Route path="/"        element={<HomePage />} />
+          <Route path="/recipes" element={<RecipesPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="*"        element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </div>
   )
 }
