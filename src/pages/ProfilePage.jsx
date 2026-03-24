@@ -1,26 +1,27 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useRecipes } from '../context/RecipeContext'
+import { useFavorites } from '../context/FavoritesContext'
 import RecipeCard from '../components/RecipeCard'
 import Modal from '../components/Modal'
 
 // ============================================
-// LAB 4: Profile Page Component
-// Shows user info and liked recipes list
-// Uses Context for recipe data
+// LAB 5 (Задача 11): Favorites now from FavoritesContext
+// likedRecipes replaced by filtering recipes by favoriteIds
 // ============================================
 
 export default function ProfilePage() {
-  const { likedRecipes, stats, isLoading } = useRecipes()
+  const { recipes, stats, isLoading } = useRecipes()
+  // Favorites data from the separate FavoritesContext
+  const { favoriteIds, favoritesCount } = useFavorites()
+
   const [modalRecipe, setModalRecipe] = useState(null)
 
-  function openModal(recipe) {
-    setModalRecipe(recipe)
-  }
+  // Compute favorite recipes from the recipes array + favoriteIds Set
+  const likedRecipes = recipes.filter(r => favoriteIds.has(r.id))
 
-  function closeModal() {
-    setModalRecipe(null)
-  }
+  function openModal(recipe) { setModalRecipe(recipe) }
+  function closeModal() { setModalRecipe(null) }
 
   return (
     <div className="page profile-page">
@@ -30,7 +31,7 @@ export default function ProfilePage() {
         </div>
         <div className="profile-info">
           <h1>My Profile</h1>
-          <p className="profile-subtitle">Home Chef & Recipe Collector</p>
+          <p className="profile-subtitle">Home Chef &amp; Recipe Collector</p>
         </div>
       </div>
 
@@ -40,7 +41,8 @@ export default function ProfilePage() {
           <span className="stat-text">Recipes</span>
         </div>
         <div className="profile-stat highlight">
-          <span className="stat-number">{stats.favorites}</span>
+          {/* Задача 11: Favorites count from FavoritesContext */}
+          <span className="stat-number">{favoritesCount}</span>
           <span className="stat-text">Favorites</span>
         </div>
         <div className="profile-stat">
@@ -68,6 +70,7 @@ export default function ProfilePage() {
           </div>
         ) : (
           <div className="favorites-grid">
+            {/* Задача 12: key={recipe.id} — not array index */}
             {likedRecipes.map(recipe => (
               <RecipeCard
                 key={recipe.id}
@@ -95,7 +98,8 @@ export default function ProfilePage() {
             <span className="achievement-desc">Collect 5 recipes</span>
           </div>
 
-          <div className={`achievement ${stats.favorites >= 3 ? 'unlocked' : 'locked'}`}>
+          {/* Задача 11: Achievement uses favoritesCount from FavoritesContext */}
+          <div className={`achievement ${favoritesCount >= 3 ? 'unlocked' : 'locked'}`}>
             <span className="achievement-icon">❤️</span>
             <span className="achievement-name">Food Lover</span>
             <span className="achievement-desc">Like 3 recipes</span>

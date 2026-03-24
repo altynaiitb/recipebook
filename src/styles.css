@@ -1065,3 +1065,128 @@ main{display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start}
   margin: 0;
 }
 
+/* ============================================
+   LAB 5: FIELD VALIDATION (Задача 2)
+   Inline error messages per field
+   ============================================ */
+.field-wrap { position: relative; }
+.field-error { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.15) !important; }
+.field-error-msg {
+  display: block;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: -6px;
+  margin-bottom: 8px;
+  padding-left: 2px;
+  animation: fadeInUp 0.2s ease;
+}
+
+/* Disabled submit button */
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ============================================
+   LAB 5: EDIT MODE FORM (Задача 3)
+   ============================================ */
+.recipe-form.editing {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px rgba(239,107,86,0.12), var(--shadow);
+}
+.recipe-form.editing h2 {
+  color: var(--accent);
+}
+
+/* ============================================
+   LAB 5: TAG CHECKBOXES (Задача 1)
+   ============================================ */
+.tags-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.tag-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f3f4f6;
+  color: var(--muted);
+  border: 2px solid transparent;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.tag-checkbox:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tag-checkbox.checked {
+  background: linear-gradient(90deg, var(--accent), #f26a55);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(239,107,86,0.22);
+}
+
+.tag-checkbox input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  accent-color: white;
+  cursor: pointer;
+}
+
+/* ============================================
+   LAB 5: TAG FILTER BAR (Задача 1)
+   Global tag buttons above recipe grid
+   ============================================ */
+.tag-filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(16,24,40,0.05);
+}
+
+.tag-filter-btn {
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: var(--muted);
+  border: 2px solid transparent;
+  transition: all 0.18s ease;
+}
+
+.tag-filter-btn.active {
+  background: linear-gradient(90deg, var(--accent), #f26a55);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(239,107,86,0.22);
+}
+
+/* ============================================
+   LAB 5: TAG BADGES ON CARDS (Задача 12)
+   ============================================ */
+.tag-badge {
+  background: rgba(239,107,86,0.1) !important;
+  color: var(--accent) !important;
+  margin-left: 4px;
+  font-size: 11px !important;
+  padding: 3px 8px !important;
+}
+

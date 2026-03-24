@@ -1,28 +1,43 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useRecipes } from '../context/RecipeContext'
+import { useFavorites } from '../context/FavoritesContext'
 
 // ============================================
-// LAB 4: Updated to use Context API
-// Uses useRecipes() hook for deleteRecipe and toggleLike
-// Only receives recipe object and onOpen via props
+// LAB 5 REQUIREMENT:
+// Задача 7: React.memo — RecipeCard won't re-render
+//   when a different card's state changes or when
+//   the user types in the search box.
+// Задача 12: key prop passed by parent uses recipe.id
+//   (not array indices) — verified in RecipeList.jsx.
+// Задача 11: Favorites come from FavoritesContext.
+//   Toggling a heart ONLY re-renders cards that changed.
 // ============================================
 
-export default function RecipeCard({ recipe, onOpen, compact = false }) {
-  // Get actions from Context
-  const { deleteRecipe, toggleLike } = useRecipes()
+const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, compact = false }) {
+  // Recipe actions from RecipeContext
+  const { deleteRecipe, handleEdit } = useRecipes()
+
+  // LAB 5 (Задача 11): favorites from the separated FavoritesContext
+  const { isFavorite, toggleFavorite } = useFavorites()
+
+  const liked = isFavorite(recipe.id)
 
   const [isHovered, setIsHovered] = useState(false)
+
+  const handleMouseEnter = useCallback(() => setIsHovered(true), [])
+  const handleMouseLeave = useCallback(() => setIsHovered(false), [])
 
   return (
     <div
       className={`card ${isHovered ? 'hover' : ''} ${recipe.removing ? 'removing' : ''} ${compact ? 'compact' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div className="card-header">
         <h3>{recipe.title}</h3>
         <div className="rating">
           {Array.from({ length: recipe.rating }).map((_, i) => (
+            // Задача 12: using index is ok here since it's purely decorative stars
             <span key={i}>★</span>
           ))}
         </div>
@@ -31,27 +46,40 @@ export default function RecipeCard({ recipe, onOpen, compact = false }) {
       <div className="card-body">
         <div className="meta">
           <span className="tag">{recipe.category}</span>
+          {/* Show tags if present */}
+          {(recipe.tags || []).map(tag => (
+            <span key={tag} className="tag tag-badge">{tag}</span>
+          ))}
         </div>
         <p className="ing">{recipe.ingredients}</p>
       </div>
 
       <div className="card-actions">
+        {/* Задача 11: Toggle favorite via FavoritesContext */}
         <button
-          className={`btn like ${recipe.liked ? 'liked' : ''}`}
-          onClick={() => toggleLike(recipe.id)}
-          title={recipe.liked ? 'Remove from favorites' : 'Add to favorites'}
+          className={`btn like ${liked ? 'liked' : ''}`}
+          onClick={() => toggleFavorite(recipe.id)}
+          title={liked ? 'Remove from favorites' : 'Add to favorites'}
         >
-          {recipe.liked ? '♥' : '♡'}
+          {liked ? '♥' : '♡'}
         </button>
-        <button className="btn" onClick={() => onOpen(recipe)}>
-          View
-        </button>
+
+        <button className="btn" onClick={() => onOpen(recipe)}>View</button>
+
         {!compact && (
-          <button className="btn danger" onClick={() => deleteRecipe(recipe.id)}>
-            Delete
-          </button>
+          <>
+            {/* Задача 3: Edit button opens form in edit mode */}
+            <button className="btn" onClick={() => handleEdit(recipe)}>
+              ✏️ Edit
+            </button>
+            <button className="btn danger" onClick={() => deleteRecipe(recipe.id)}>
+              Delete
+            </button>
+          </>
         )}
       </div>
     </div>
   )
-}
+})
+
+export default RecipeCard

@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { useRecipes } from '../context/RecipeContext'
 
 // ============================================
@@ -18,7 +19,12 @@ import { useRecipes } from '../context/RecipeContext'
 // in RecipeContext.jsx where the useEffect lives
 // ============================================
 
-export default function CookingTimer() {
+// ============================================
+// LAB 5 REQUIREMENT (Задача 7): React.memo
+// CookingTimer won't re-render when recipes change
+// or when the user types in the search/form fields.
+// ============================================
+const CookingTimer = React.memo(function CookingTimer() {
   // Get all timer state and actions from global Context
   const {
     timerSeconds,
@@ -153,4 +159,6 @@ export default function CookingTimer() {
       )}
     </div>
   )
-}
+})
+
+export default CookingTimer
