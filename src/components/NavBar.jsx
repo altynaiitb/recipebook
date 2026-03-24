@@ -43,6 +43,15 @@ export default function NavBar() {
         </li>
         <li>
           <NavLink
+            to="/explore"
+            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          >
+            <span className="nav-icon">🌍</span>
+            <span className="nav-text">Explore</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
             to="/profile"
             className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
           >

@@ -13,7 +13,8 @@ import { useFavorites } from '../context/FavoritesContext'
 //   Toggling a heart ONLY re-renders cards that changed.
 // ============================================
 
-const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, compact = false }) {
+// LAB 6 Задача 4+8: onDelete — открывает ConfirmModal из RecipesPage через useModal
+const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, onDelete, compact = false }) {
   // Recipe actions from RecipeContext
   const { deleteRecipe, handleEdit } = useRecipes()
 
@@ -72,7 +73,11 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, compact = fa
             <button className="btn" onClick={() => handleEdit(recipe)}>
               ✏️ Edit
             </button>
-            <button className="btn danger" onClick={() => deleteRecipe(recipe.id)}>
+            {/* LAB 6 Задача 8: удаление с подтверждением через useModal */}
+            <button
+              className="btn danger"
+              onClick={() => onDelete ? onDelete(recipe) : deleteRecipe(recipe.id)}
+            >
               Delete
             </button>
           </>

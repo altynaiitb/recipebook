@@ -1,69 +1,85 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import { useRecipes, TAGS } from '../context/RecipeContext'
 import { useFavorites } from '../context/FavoritesContext'
-import RecipeForm from '../components/RecipeForm'
-import RecipeList from '../components/RecipeList'
-import Filters from '../components/Filters'
+import { useFilter }    from '../hooks/useFilter'
+import { useModal }     from '../hooks/useModal'
+import RecipeForm  from '../components/RecipeForm'
+import RecipeList  from '../components/RecipeList'
+import Filters     from '../components/Filters'
 import CookingTimer from '../components/CookingTimer'
-import Modal from '../components/Modal'
+import Modal       from '../components/Modal'
+import ConfirmModal from '../components/ConfirmModal'
 
 // ============================================
-// LAB 5 REQUIREMENTS SATISFIED HERE:
-// Задача 8: useMemo — фильтрация + сортировка пересчитываются
-//           только при изменении рецептов или параметров фильтра
-// Задача 11: Использует оба контекста раздельно
-// Задача 12: Рендеринг списков через recipe.id, не индексы
+// LAB 6 REQUIREMENTS SATISFIED HERE:
+// Задача 3: useFilter — фильтрация рецептов (поиск, категория, теги)
+// Задача 4: useModal  — управление модалками (просмотр, подтверждение удаления)
+// Задача 8: удаление через API с подтверждением
+// (Lab 5 требования сохранены: useMemo для сортировки, раздельные контексты)
 // ============================================
 
 export default function RecipesPage() {
-  const { recipes, isLoading, stats } = useRecipes()
-
-  // LAB 5 (Задача 11): favorites count comes from the SEPARATE context
+  const { recipes, isLoading, stats, deleteRecipe } = useRecipes()
   const { favoritesCount, favoriteIds } = useFavorites()
 
-  // Local filter/search state (page-specific, not global)
-  const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('All')
-  const [sortBy, setSortBy] = useState('alpha')
+  const [sortBy, setSortBy]               = useState('alpha')
   const [showFavorites, setShowFavorites] = useState(false)
-  const [activeTags, setActiveTags] = useState([]) // Задача 1: tag filter
-  const [modalRecipe, setModalRecipe] = useState(null)
 
-  // Задача 1: Toggle a tag filter
-  const handleTagFilter = useCallback((tag) => {
-    setActiveTags(prev =>
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-    )
-  }, [])
+  // ── LAB 6 Задача 3: useFilter — кастомный хук фильтрации ──────────────
+  const {
+    filtered: filteredRecipes,
+    filters,
+    updateFilter,
+    resetFilters
+  } = useFilter(recipes, {
+    searchField:   'title',
+    categoryField: 'category',
+    tagsField:     'tags'
+  })
 
-  // ============================================
-  // Задача 8: useMemo — filtering + sorting
-  // Recalculates ONLY when recipes or filter params change.
-  // Writing in the search box does NOT re-sort the whole list
-  // from scratch when the filtered set hasn't changed.
-  // ============================================
+  // Дополнительный фильтр по избранному (не входит в useFilter,
+  // поскольку избранное хранится в отдельном контексте по ID)
+  const afterFavoriteFilter = useMemo(() => {
+    return showFavorites
+      ? filteredRecipes.filter(r => favoriteIds.has(r.id))
+      : filteredRecipes
+  }, [filteredRecipes, showFavorites, favoriteIds])
+
+  // Сортировка финального списка
   const sortedRecipes = useMemo(() => {
-    const filtered = recipes
-      .filter(r => r.title.toLowerCase().includes(search.toLowerCase()))
-      .filter(r => category === 'All' || r.category === category)
-      // Задача 11: favorites stored in FavoritesContext by ID
-      .filter(r => !showFavorites || favoriteIds.has(r.id))
-      // Задача 1: tag filter — show recipe if it has ALL active tags
-      .filter(r =>
-        activeTags.length === 0 ||
-        activeTags.every(tag => (r.tags || []).includes(tag))
-      )
-
-    // Задача 12: sort preserved — uses recipe.id as keys in RecipeList
-    return [...filtered].sort((a, b) => {
-      if (sortBy === 'alpha') return a.title.localeCompare(b.title)
+    return [...afterFavoriteFilter].sort((a, b) => {
+      if (sortBy === 'alpha')  return a.title.localeCompare(b.title)
       if (sortBy === 'rating') return b.rating - a.rating
       return 0
     })
-  }, [recipes, search, category, showFavorites, sortBy, activeTags, favoriteIds])
+  }, [afterFavoriteFilter, sortBy])
 
-  const openModal = useCallback((recipe) => setModalRecipe(recipe), [])
-  const closeModal = useCallback(() => setModalRecipe(null), [])
+  // ── LAB 6 Задача 4: useModal — просмотр деталей рецепта ───────────────
+  const viewModal   = useModal()
+  // ── LAB 6 Задача 4: useModal — подтверждение удаления ─────────────────
+  const deleteModal = useModal()
+
+  const openView    = useCallback((recipe) => viewModal.open(recipe), [viewModal])
+  const closeView   = useCallback(() => viewModal.close(), [viewModal])
+
+  // Задача 8: удаление с подтверждением
+  const requestDelete = useCallback((recipe) => deleteModal.open(recipe), [deleteModal])
+
+  const confirmDelete = useCallback(() => {
+    if (deleteModal.data) {
+      deleteRecipe(deleteModal.data.id)
+    }
+    deleteModal.close()
+  }, [deleteModal, deleteRecipe])
+
+  // Тег-фильтры — переключение через updateFilter
+  const handleTagFilter = useCallback((tag) => {
+    const current = filters.tags || []
+    const next = current.includes(tag)
+      ? current.filter(t => t !== tag)
+      : [...current, tag]
+    updateFilter('tags', next)
+  }, [filters.tags, updateFilter])
 
   return (
     <div className="page recipes-page">
@@ -71,24 +87,23 @@ export default function RecipesPage() {
         <h1>All Recipes</h1>
         <div className="counters">
           <div className="counter">Showing: {sortedRecipes.length} of {stats.total}</div>
-          {/* Задача 11: favorites count from FavoritesContext */}
           <div className="counter favorites-counter">❤️ Favorites: {favoritesCount}</div>
         </div>
       </header>
 
-      {/* Задача 1: Tag filter buttons */}
+      {/* Tag filter bar */}
       <div className="tag-filter-bar">
         {TAGS.map(tag => (
           <button
             key={tag}
-            className={`btn tag-filter-btn ${activeTags.includes(tag) ? 'active' : ''}`}
+            className={`btn tag-filter-btn ${(filters.tags || []).includes(tag) ? 'active' : ''}`}
             onClick={() => handleTagFilter(tag)}
           >
             {tag}
           </button>
         ))}
-        {activeTags.length > 0 && (
-          <button className="btn" onClick={() => setActiveTags([])}>
+        {(filters.tags || []).length > 0 && (
+          <button className="btn" onClick={() => updateFilter('tags', [])}>
             Clear Tags
           </button>
         )}
@@ -99,10 +114,10 @@ export default function RecipesPage() {
           <RecipeForm />
           <CookingTimer />
           <Filters
-            search={search}
-            setSearch={setSearch}
-            category={category}
-            setCategory={setCategory}
+            search={filters.search}
+            setSearch={v => updateFilter('search', v)}
+            category={filters.category}
+            setCategory={v => updateFilter('category', v)}
             sortBy={sortBy}
             setSortBy={setSortBy}
             showFavorites={showFavorites}
@@ -117,17 +132,30 @@ export default function RecipesPage() {
               <div className="loading-text">Loading recipes…</div>
             </div>
           ) : (
-            // Задача 12: RecipeList uses recipe.id as key (not index)
             <RecipeList
               recipes={sortedRecipes}
-              onOpen={openModal}
+              onOpen={openView}
+              onDelete={requestDelete}
               showFavorites={showFavorites}
             />
           )}
         </section>
       </main>
 
-      {modalRecipe && <Modal recipe={modalRecipe} onClose={closeModal} />}
+      {/* LAB 6 Задача 4: useModal — просмотр деталей */}
+      {viewModal.isOpen && viewModal.data && (
+        <Modal recipe={viewModal.data} onClose={closeView} />
+      )}
+
+      {/* LAB 6 Задача 4 + 8: useModal — подтверждение удаления */}
+      {deleteModal.isOpen && (
+        <ConfirmModal
+          title="Delete Recipe"
+          message={`Are you sure you want to delete "${deleteModal.data?.title}"?`}
+          onConfirm={confirmDelete}
+          onCancel={deleteModal.close}
+        />
+      )}
     </div>
   )
 }

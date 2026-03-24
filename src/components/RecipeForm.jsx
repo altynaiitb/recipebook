@@ -1,13 +1,14 @@
-import React, { useState, useRef, useLayoutEffect, useEffect, useCallback } from 'react'
+import React, { useRef, useLayoutEffect, useEffect, useCallback, useState } from 'react'
 import { useRecipes, CATEGORIES, TAGS } from '../context/RecipeContext'
+import { useForm } from '../hooks/useForm'
 
 // ============================================
-// LAB 5 REQUIREMENTS SATISFIED IN THIS FILE:
-// Задача 1: Управляемые поля (useState для всех полей)
-// Задача 1: select для категорий, checkboxes для тегов
-// Задача 2: Валидация в реальном времени (title < 3 / timer < 1)
-// Задача 2: Кнопка Submit заблокирована при ошибках
-// Задача 3: Режим редактирования — предзаполняется из editingRecipe
+// LAB 6 REQUIREMENTS SATISFIED IN THIS FILE:
+// Задача 1 (Lab 6): useForm — кастомный хук управляет состоянием формы
+// Задача 9 (Lab 6): Тесты для useForm написаны в __tests__/hooks/useForm.test.js
+// Задача 10 (Lab 6): Тесты компонента — __tests__/components/RecipeForm.test.jsx
+//
+// (Требования Lab 5 сохранены: React.memo, real-time validation, edit mode)
 // ============================================
 
 const EMPTY_FORM = {
@@ -20,23 +21,22 @@ const EMPTY_FORM = {
   timerMinutes: 5
 }
 
-function getInitialForm(recipe) {
+function buildFormFromRecipe(recipe) {
   if (!recipe) return EMPTY_FORM
   return {
-    title: recipe.title || '',
-    category: recipe.category || CATEGORIES[0],
-    ingredients: recipe.ingredients || '',
-    description: recipe.description || '',
-    tags: recipe.tags || [],
-    rating: recipe.rating ?? 4,
+    title:        recipe.title        || '',
+    category:     recipe.category     || CATEGORIES[0],
+    ingredients:  recipe.ingredients  || '',
+    description:  recipe.description  || '',
+    tags:         recipe.tags         || [],
+    rating:       recipe.rating       ?? 4,
     timerMinutes: recipe.timerMinutes ?? 5
   }
 }
 
 // ============================================
-// LAB 5: Задача 7 — React.memo
-// RecipeForm won't re-render when the favorites
-// list changes (because FavoritesContext is separate).
+// LAB 5: React.memo — форма не перерендеривается
+//         при изменении списка избранного
 // ============================================
 export default React.memo(function RecipeForm() {
   const { addRecipe, updateRecipe, editingRecipe, setEditingRecipe } = useRecipes()
@@ -44,25 +44,27 @@ export default React.memo(function RecipeForm() {
   const isEditing = Boolean(editingRecipe)
 
   // ============================================
-  // Задача 1: All fields are controlled (useState)
+  // LAB 6 Задача 1: useForm — кастомный хук формы
+  // values, handleChange, reset, setValues
   // ============================================
-  const [form, setForm] = useState(() => getInitialForm(editingRecipe))
-  const [touched, setTouched] = useState({})   // track which fields were touched
-  const [success, setSuccess] = useState(false)
+  const { values: form, handleChange, reset, setValues } = useForm(EMPTY_FORM)
+
+  const [touched, setTouched]   = useState({})
+  const [success, setSuccess]   = useState(false)
   const [isActive, setIsActive] = useState(false)
-  const descRef = useRef(null)
-  const successTimer = useRef(null)
+  const descRef        = useRef(null)
+  const successTimer   = useRef(null)
 
   // ============================================
-  // Задача 3: Pre-fill form when editingRecipe changes
+  // Задача 3 (Lab 5): Предзаполнение при переходе в режим редактирования
   // ============================================
   useEffect(() => {
-    setForm(getInitialForm(editingRecipe))
+    setValues(buildFormFromRecipe(editingRecipe))
     setTouched({})
     setSuccess(false)
-  }, [editingRecipe])
+  }, [editingRecipe, setValues])
 
-  // Auto-expand textarea
+  // Авто-расширение textarea описания (Lab 5 — useLayoutEffect)
   useLayoutEffect(() => {
     const el = descRef.current
     if (!el) return
@@ -70,59 +72,48 @@ export default React.memo(function RecipeForm() {
     el.style.height = `${el.scrollHeight}px`
   }, [form.description])
 
-  // ============================================
-  // Задача 2: Real-time validation rules
-  // ============================================
+  // ── Валидация в реальном времени (Lab 5 Задача 2) ──────────────────────
   const errors = {}
-  if (form.title.trim().length > 0 && form.title.trim().length < 3) {
-    errors.title = 'Title must be at least 3 characters.'
-  }
-  if (!form.title.trim()) {
-    errors.title = 'Title is required.'
-  }
-  if (!form.ingredients.trim()) {
-    errors.ingredients = 'Ingredients are required.'
-  }
-  if (!form.description.trim()) {
-    errors.description = 'Description is required.'
-  }
-  if (form.timerMinutes < 1) {
-    errors.timerMinutes = 'Timer must be at least 1 minute.'
-  }
+  if (!form.title.trim())                               errors.title = 'Title is required.'
+  else if (form.title.trim().length < 3)                errors.title = 'Title must be at least 3 characters.'
+  if (!form.ingredients.trim())                         errors.ingredients = 'Ingredients are required.'
+  if (!form.description.trim())                         errors.description = 'Description is required.'
+  if (Number(form.timerMinutes) < 1)                    errors.timerMinutes = 'Timer must be at least 1 minute.'
 
   const isValid = Object.keys(errors).length === 0
 
-  // Generic field change handler
-  const handleChange = useCallback((field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }))
+  const touch = useCallback((field) => {
     setTouched(prev => ({ ...prev, [field]: true }))
   }, [])
 
-  // Задача 1: Checkbox toggle for tags
+  // handleChange уже обновляет values через useForm
+  // Дополнительно помечаем поле как «тронутое» для отображения ошибок
+  const handleFieldChange = useCallback((field, value) => {
+    handleChange(field, value)
+    touch(field)
+  }, [handleChange, touch])
+
+  // Чекбоксы тегов
   const handleTagToggle = useCallback((tag) => {
-    setForm(prev => {
-      const has = prev.tags.includes(tag)
-      return {
-        ...prev,
-        tags: has ? prev.tags.filter(t => t !== tag) : [...prev.tags, tag]
-      }
-    })
-  }, [])
+    const current = form.tags || []
+    const newTags = current.includes(tag)
+      ? current.filter(t => t !== tag)
+      : [...current, tag]
+    handleChange('tags', newTags)
+  }, [form.tags, handleChange])
 
   function submit(e) {
     e.preventDefault()
-    // Mark all fields as touched to show all errors
     setTouched({ title: true, ingredients: true, description: true, timerMinutes: true })
     if (!isValid) return
 
     if (isEditing) {
-      // Задача 3: Update existing recipe
       updateRecipe({ ...editingRecipe, ...form })
     } else {
       addRecipe({ ...form })
     }
 
-    setForm(EMPTY_FORM)
+    reset()
     setTouched({})
     clearTimeout(successTimer.current)
     setSuccess(true)
@@ -131,7 +122,7 @@ export default React.memo(function RecipeForm() {
 
   function handleCancel() {
     setEditingRecipe(null)
-    setForm(EMPTY_FORM)
+    reset()
     setTouched({})
   }
 
@@ -142,11 +133,10 @@ export default React.memo(function RecipeForm() {
       onMouseDown={() => setIsActive(true)}
       onMouseUp={() => setIsActive(false)}
     >
-      {/* Задача 3: Dynamic heading based on mode */}
       <h2>{isEditing ? `✏️ Edit: ${editingRecipe.title}` : 'Add Recipe'}</h2>
 
       {success && (
-        <div className="success">
+        <div className="success" role="status">
           {isEditing ? 'Recipe updated!' : 'Recipe added!'}
         </div>
       )}
@@ -155,20 +145,20 @@ export default React.memo(function RecipeForm() {
       <div className="form-row">
         <div className="field-wrap">
           <input
+            data-testid="input-title"
             className={`field title ${touched.title && errors.title ? 'field-error' : ''}`}
             placeholder="Title (min 3 chars)"
             value={form.title}
-            onChange={e => handleChange('title', e.target.value)}
-            onBlur={() => setTouched(prev => ({ ...prev, title: true }))}
+            onChange={e => handleFieldChange('title', e.target.value)}
+            onBlur={() => touch('title')}
           />
-          {/* Задача 2: Inline error message */}
           {touched.title && errors.title && (
-            <span className="field-error-msg">{errors.title}</span>
+            <span className="field-error-msg" role="alert">{errors.title}</span>
           )}
         </div>
 
-        {/* Задача 1: Category select */}
         <select
+          data-testid="select-category"
           className="field category"
           value={form.category}
           onChange={e => handleChange('category', e.target.value)}
@@ -177,12 +167,15 @@ export default React.memo(function RecipeForm() {
         </select>
       </div>
 
-      {/* ─── Tags (Задача 1: Checkboxes) ─── */}
+      {/* ─── Tags ─── */}
       <div className="form-block">
         <label className="block-label">Tags</label>
         <div className="tags-group">
           {TAGS.map(tag => (
-            <label key={tag} className={`tag-checkbox ${form.tags.includes(tag) ? 'checked' : ''}`}>
+            <label
+              key={tag}
+              className={`tag-checkbox ${form.tags.includes(tag) ? 'checked' : ''}`}
+            >
               <input
                 type="checkbox"
                 checked={form.tags.includes(tag)}
@@ -198,14 +191,15 @@ export default React.memo(function RecipeForm() {
       <div className="form-block">
         <label className="block-label">Ingredients</label>
         <textarea
+          data-testid="input-ingredients"
           className={`ingredients ${touched.ingredients && errors.ingredients ? 'field-error' : ''}`}
           placeholder="Ingredients (comma separated)"
           value={form.ingredients}
-          onChange={e => handleChange('ingredients', e.target.value)}
-          onBlur={() => setTouched(prev => ({ ...prev, ingredients: true }))}
+          onChange={e => handleFieldChange('ingredients', e.target.value)}
+          onBlur={() => touch('ingredients')}
         />
         {touched.ingredients && errors.ingredients && (
-          <span className="field-error-msg">{errors.ingredients}</span>
+          <span className="field-error-msg" role="alert">{errors.ingredients}</span>
         )}
       </div>
 
@@ -214,31 +208,33 @@ export default React.memo(function RecipeForm() {
         <label className="block-label">Instructions / Description</label>
         <textarea
           ref={descRef}
+          data-testid="input-description"
           className={`description ${touched.description && errors.description ? 'field-error' : ''}`}
           placeholder="Describe the preparation steps..."
           value={form.description}
-          onChange={e => handleChange('description', e.target.value)}
-          onBlur={() => setTouched(prev => ({ ...prev, description: true }))}
+          onChange={e => handleFieldChange('description', e.target.value)}
+          onBlur={() => touch('description')}
         />
         {touched.description && errors.description && (
-          <span className="field-error-msg">{errors.description}</span>
+          <span className="field-error-msg" role="alert">{errors.description}</span>
         )}
       </div>
 
-      {/* ─── Timer (Задача 2: validated ≥ 1 minute) ─── */}
+      {/* ─── Cook Time ─── */}
       <div className="form-block">
         <label className="block-label">Cook Time (minutes)</label>
         <input
+          data-testid="input-timer"
           type="number"
           className={`field ${touched.timerMinutes && errors.timerMinutes ? 'field-error' : ''}`}
           min="1"
           max="600"
           value={form.timerMinutes}
-          onChange={e => handleChange('timerMinutes', Number(e.target.value))}
-          onBlur={() => setTouched(prev => ({ ...prev, timerMinutes: true }))}
+          onChange={e => handleFieldChange('timerMinutes', Number(e.target.value))}
+          onBlur={() => touch('timerMinutes')}
         />
         {touched.timerMinutes && errors.timerMinutes && (
-          <span className="field-error-msg">{errors.timerMinutes}</span>
+          <span className="field-error-msg" role="alert">{errors.timerMinutes}</span>
         )}
       </div>
 
@@ -265,7 +261,6 @@ export default React.memo(function RecipeForm() {
             Cancel
           </button>
         )}
-        {/* Задача 2: Submit disabled when validation fails */}
         <button
           type="submit"
           className="btn primary"

@@ -2,12 +2,12 @@ import React from 'react'
 import RecipeCard from './RecipeCard'
 
 // ============================================
-// LAB 4: RecipeList Component
-// Receives filtered recipes from parent page
-// RecipeCard uses Context for actions
+// LAB 6: RecipeList принимает onDelete —
+// пробрасывает его в RecipeCard для подтверждения удаления через useModal.
+// (Lab 5: ключ — recipe.id, не индекс массива)
 // ============================================
 
-export default function RecipeList({ recipes, onOpen, showFavorites }) {
+export default function RecipeList({ recipes, onOpen, onDelete, showFavorites }) {
   if (recipes.length === 0) {
     const message = showFavorites
       ? "You haven't added any favorites yet!"
@@ -22,12 +22,13 @@ export default function RecipeList({ recipes, onOpen, showFavorites }) {
   }
 
   return (
-    <div className="recipe-list">
+    <div className="recipe-list" data-testid="recipe-list">
       {recipes.map(recipe => (
         <RecipeCard
           key={recipe.id}
           recipe={recipe}
           onOpen={onOpen}
+          onDelete={onDelete}
         />
       ))}
     </div>
