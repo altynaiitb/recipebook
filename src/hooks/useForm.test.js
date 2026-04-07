@@ -1,11 +1,6 @@
-// ============================================
-// LAB 6 — Задача 9: Тестирование хука useForm
-// Используем renderHook из @testing-library/react
-// и act для оборачивания обновлений состояния.
-// ============================================
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useForm } from '../../hooks/useForm'
+import { useForm } from './useForm'
 
 const INITIAL = {
   title: '',
@@ -14,7 +9,6 @@ const INITIAL = {
 }
 
 describe('useForm', () => {
-  // ── Инициализация ─────────────────────────────────────────────────────
 
   it('возвращает начальные значения', () => {
     const { result } = renderHook(() => useForm(INITIAL))
@@ -28,7 +22,6 @@ describe('useForm', () => {
     expect(typeof result.current.setValues).toBe('function')
   })
 
-  // ── handleChange ─────────────────────────────────────────────────────
 
   it('handleChange обновляет одно поле', () => {
     const { result } = renderHook(() => useForm(INITIAL))
@@ -38,7 +31,6 @@ describe('useForm', () => {
     })
 
     expect(result.current.values.title).toBe('Pasta')
-    // Другие поля не изменились
     expect(result.current.values.category).toBe('Breakfast')
     expect(result.current.values.rating).toBe(4)
   })
@@ -67,12 +59,10 @@ describe('useForm', () => {
       result.current.handleChange('title', 'Steak')
     })
 
-    // before — прежний снимок состояния, он не должен измениться
     expect(before.title).toBe('')
     expect(result.current.values.title).toBe('Steak')
   })
 
-  // ── reset ─────────────────────────────────────────────────────────────
 
   it('reset возвращает форму к начальным значениям', () => {
     const { result } = renderHook(() => useForm(INITIAL))
@@ -104,8 +94,6 @@ describe('useForm', () => {
     expect(result.current.values.name).toBe('Test')
   })
 
-  // ── setValues ─────────────────────────────────────────────────────────
-
   it('setValues полностью заменяет состояние формы', () => {
     const { result } = renderHook(() => useForm(INITIAL))
     const newValues = { title: 'Burger', category: 'Dinner', rating: 5 }
@@ -128,11 +116,8 @@ describe('useForm', () => {
       result.current.reset()
     })
 
-    // reset должен вернуть к ПЕРВОНАЧАЛЬНЫМ значениям, переданным при инициализации
     expect(result.current.values).toEqual(INITIAL)
   })
-
-  // ── Стабильность ссылок (useCallback) ────────────────────────────────
 
   it('handleChange имеет стабильную ссылку между рендерами', () => {
     const { result, rerender } = renderHook(() => useForm(INITIAL))

@@ -1,13 +1,6 @@
-// ============================================
-// LAB 6 — Задача 12: Тестирование хука useFetch
-// Используем vi.fn() для mock fetch API.
-// Проверяем: состояние загрузки, получение данных, обработку ошибок.
-// ============================================
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { useFetch } from '../../hooks/useFetch'
-
-// ── Helpers ───────────────────────────────────────────────────────────────
+import { useFetch } from './useFetch'
 
 function mockFetchSuccess(data) {
   global.fetch = vi.fn().mockResolvedValue({
@@ -28,7 +21,6 @@ function mockFetchNetworkError(message = 'Network failure') {
   global.fetch = vi.fn().mockRejectedValue(new Error(message))
 }
 
-// ── Suite ─────────────────────────────────────────────────────────────────
 
 describe('useFetch', () => {
   beforeEach(() => {
@@ -39,7 +31,6 @@ describe('useFetch', () => {
     vi.restoreAllMocks()
   })
 
-  // ── Начальное состояние ──────────────────────────────────────────────
 
   it('возвращает null data и false loading при url=null', () => {
     const { result } = renderHook(() => useFetch(null))
@@ -48,7 +39,6 @@ describe('useFetch', () => {
     expect(result.current.error).toBeNull()
   })
 
-  // ── Состояние загрузки ────────────────────────────────────────────────
 
   it('выставляет loading=true сразу после вызова с URL', async () => {
     let resolveFetch
@@ -57,15 +47,12 @@ describe('useFetch', () => {
     )
 
     const { result } = renderHook(() => useFetch('https://api.test/data'))
-    // Сразу после монтирования loading должен стать true
     expect(result.current.loading).toBe(true)
 
-    // Чистим: завершаем промис чтобы не было warning об утечках
     resolveFetch({ ok: true, json: () => Promise.resolve({}) })
     await waitFor(() => expect(result.current.loading).toBe(false))
   })
 
-  // ── Успешный запрос ───────────────────────────────────────────────────
 
   it('сохраняет полученные данные в data', async () => {
     const mockData = { meals: [{ idMeal: '1', strMeal: 'Pasta' }] }
@@ -88,8 +75,6 @@ describe('useFetch', () => {
     expect(result.current.loading).toBe(false)
   })
 
-  // ── HTTP-ошибка ───────────────────────────────────────────────────────
-
   it('записывает ошибку в error при HTTP статусе ≥ 400', async () => {
     mockFetchError(404, 'Not Found')
 
@@ -110,8 +95,6 @@ describe('useFetch', () => {
     expect(result.current.error).toContain('500')
   })
 
-  // ── Сетевая ошибка ─────────────────────────────────────────────────────
-
   it('обрабатывает сетевую ошибку (fetch rejected)', async () => {
     mockFetchNetworkError('Network failure')
 
@@ -122,8 +105,6 @@ describe('useFetch', () => {
     expect(result.current.error).toBe('Network failure')
     expect(result.current.data).toBeNull()
   })
-
-  // ── fetch вызывается с правильным URL ────────────────────────────────
 
   it('вызывает fetch с переданным URL', async () => {
     mockFetchSuccess({})
@@ -137,21 +118,17 @@ describe('useFetch', () => {
     ))
   })
 
-  // ── refetch ───────────────────────────────────────────────────────────
-
   it('refetch повторяет запрос и обновляет данные', async () => {
     mockFetchSuccess({ count: 1 })
     const { result } = renderHook(() => useFetch('https://api.test/count'))
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    // Меняем mock для повторного запроса
     mockFetchSuccess({ count: 2 })
 
     await result.current.refetch()
     await waitFor(() => expect(result.current.data).toEqual({ count: 2 }))
   })
 
-  // ── Тип возвращаемых значений ─────────────────────────────────────────
 
   it('refetch — это функция', () => {
     mockFetchSuccess({})

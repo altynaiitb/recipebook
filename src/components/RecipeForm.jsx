@@ -2,15 +2,6 @@ import React, { useRef, useLayoutEffect, useEffect, useCallback, useState } from
 import { useRecipes, CATEGORIES, TAGS } from '../context/RecipeContext'
 import { useForm } from '../hooks/useForm'
 
-// ============================================
-// LAB 6 REQUIREMENTS SATISFIED IN THIS FILE:
-// Задача 1 (Lab 6): useForm — кастомный хук управляет состоянием формы
-// Задача 9 (Lab 6): Тесты для useForm написаны в __tests__/hooks/useForm.test.js
-// Задача 10 (Lab 6): Тесты компонента — __tests__/components/RecipeForm.test.jsx
-//
-// (Требования Lab 5 сохранены: React.memo, real-time validation, edit mode)
-// ============================================
-
 const EMPTY_FORM = {
   title: '',
   category: CATEGORIES[0],
@@ -34,19 +25,11 @@ function buildFormFromRecipe(recipe) {
   }
 }
 
-// ============================================
-// LAB 5: React.memo — форма не перерендеривается
-//         при изменении списка избранного
-// ============================================
 export default React.memo(function RecipeForm() {
   const { addRecipe, updateRecipe, editingRecipe, setEditingRecipe } = useRecipes()
 
   const isEditing = Boolean(editingRecipe)
 
-  // ============================================
-  // LAB 6 Задача 1: useForm — кастомный хук формы
-  // values, handleChange, reset, setValues
-  // ============================================
   const { values: form, handleChange, reset, setValues } = useForm(EMPTY_FORM)
 
   const [touched, setTouched]   = useState({})
@@ -55,16 +38,12 @@ export default React.memo(function RecipeForm() {
   const descRef        = useRef(null)
   const successTimer   = useRef(null)
 
-  // ============================================
-  // Задача 3 (Lab 5): Предзаполнение при переходе в режим редактирования
-  // ============================================
   useEffect(() => {
     setValues(buildFormFromRecipe(editingRecipe))
     setTouched({})
     setSuccess(false)
   }, [editingRecipe, setValues])
 
-  // Авто-расширение textarea описания (Lab 5 — useLayoutEffect)
   useLayoutEffect(() => {
     const el = descRef.current
     if (!el) return
@@ -72,7 +51,6 @@ export default React.memo(function RecipeForm() {
     el.style.height = `${el.scrollHeight}px`
   }, [form.description])
 
-  // ── Валидация в реальном времени (Lab 5 Задача 2) ──────────────────────
   const errors = {}
   if (!form.title.trim())                               errors.title = 'Title is required.'
   else if (form.title.trim().length < 3)                errors.title = 'Title must be at least 3 characters.'
@@ -86,14 +64,11 @@ export default React.memo(function RecipeForm() {
     setTouched(prev => ({ ...prev, [field]: true }))
   }, [])
 
-  // handleChange уже обновляет values через useForm
-  // Дополнительно помечаем поле как «тронутое» для отображения ошибок
   const handleFieldChange = useCallback((field, value) => {
     handleChange(field, value)
     touch(field)
   }, [handleChange, touch])
 
-  // Чекбоксы тегов
   const handleTagToggle = useCallback((tag) => {
     const current = form.tags || []
     const newTags = current.includes(tag)
