@@ -1,28 +1,19 @@
 import React, { useRef, useLayoutEffect, useEffect, useCallback, useState } from 'react'
 import { useRecipes, CATEGORIES, TAGS } from '../context/RecipeContext'
-import { useForm } from '../hooks/useForm'
 
-const EMPTY_FORM = {
+// ============================================
+// LAB 7 Task 4: Hybrid Forms
+// Controlled: title, category (via useState)
+// Uncontrolled: ingredients, description (via useRef)
+// Tags, rating, timerMinutes remain controlled.
+// ============================================
+
+const EMPTY_CONTROLLED = {
   title: '',
   category: CATEGORIES[0],
-  ingredients: '',
-  description: '',
   tags: [],
   rating: 4,
   timerMinutes: 5
-}
-
-function buildFormFromRecipe(recipe) {
-  if (!recipe) return EMPTY_FORM
-  return {
-    title:        recipe.title        || '',
-    category:     recipe.category     || CATEGORIES[0],
-    ingredients:  recipe.ingredients  || '',
-    description:  recipe.description  || '',
-    tags:         recipe.tags         || [],
-    rating:       recipe.rating       ?? 4,
-    timerMinutes: recipe.timerMinutes ?? 5
-  }
 }
 
 export default React.memo(function RecipeForm() {
@@ -30,66 +21,146 @@ export default React.memo(function RecipeForm() {
 
   const isEditing = Boolean(editingRecipe)
 
-  const { values: form, handleChange, reset, setValues } = useForm(EMPTY_FORM)
+  // ── Controlled state (title, category, tags, rating, timer) ──
+  const [controlled, setControlled] = useState(EMPTY_CONTROLLED)
+
+  // ── Uncontrolled refs (ingredients, description / instructions) ──
+  const ingredientsRef = useRef(null)
+  const descriptionRef = useRef(null)
 
   const [touched, setTouched]   = useState({})
+  const [errors, setErrors]     = useState({})
   const [success, setSuccess]   = useState(false)
   const [isActive, setIsActive] = useState(false)
-  const descRef        = useRef(null)
-  const successTimer   = useRef(null)
+  const successTimer = useRef(null)
 
+  // ── Sync when entering edit mode ──
   useEffect(() => {
-    setValues(buildFormFromRecipe(editingRecipe))
+    if (editingRecipe) {
+      setControlled({
+        title:        editingRecipe.title        || '',
+        category:     editingRecipe.category     || CATEGORIES[0],
+        tags:         editingRecipe.tags         || [],
+        rating:       editingRecipe.rating       ?? 4,
+        timerMinutes: editingRecipe.timerMinutes ?? 5
+      })
+      // Sync uncontrolled refs
+      if (ingredientsRef.current) ingredientsRef.current.value = editingRecipe.ingredients || ''
+      if (descriptionRef.current) descriptionRef.current.value = editingRecipe.description || ''
+    } else {
+      setControlled(EMPTY_CONTROLLED)
+      if (ingredientsRef.current) ingredientsRef.current.value = ''
+      if (descriptionRef.current) descriptionRef.current.value = ''
+    }
     setTouched({})
+    setErrors({})
     setSuccess(false)
-  }, [editingRecipe, setValues])
+  }, [editingRecipe])
 
+  // ── Auto-resize description textarea ──
   useLayoutEffect(() => {
-    const el = descRef.current
+    const el = descriptionRef.current
     if (!el) return
     el.style.height = 'auto'
     el.style.height = `${el.scrollHeight}px`
-  }, [form.description])
+  })
 
-  const errors = {}
-  if (!form.title.trim())                               errors.title = 'Title is required.'
-  else if (form.title.trim().length < 3)                errors.title = 'Title must be at least 3 characters.'
-  if (!form.ingredients.trim())                         errors.ingredients = 'Ingredients are required.'
-  if (!form.description.trim())                         errors.description = 'Description is required.'
-  if (Number(form.timerMinutes) < 1)                    errors.timerMinutes = 'Timer must be at least 1 minute.'
+  // ── Validation helper ──
+  const validate = useCallback((opts = {}) => {
+    const title = opts.title ?? controlled.title
+    const ingredients = opts.ingredients ?? (ingredientsRef.current?.value || '')
+    const description = opts.description ?? (descriptionRef.current?.value || '')
+    const timerMinutes = opts.timerMinutes ?? controlled.timerMinutes
 
-  const isValid = Object.keys(errors).length === 0
+    const errs = {}
+    if (!title.trim()) errs.title = 'Title is required.'
+    else if (title.trim().length < 3) errs.title = 'Title must be at least 3 characters.'
+    if (!ingredients.trim()) errs.ingredients = 'Ingredients are required.'
+    if (!description.trim()) errs.description = 'Description is required.'
+    if (Number(timerMinutes) < 1) errs.timerMinutes = 'Timer must be at least 1 minute.'
+    return errs
+  }, [controlled.title, controlled.timerMinutes])
 
+  // ── Helpers ──
   const touch = useCallback((field) => {
     setTouched(prev => ({ ...prev, [field]: true }))
   }, [])
 
-  const handleFieldChange = useCallback((field, value) => {
-    handleChange(field, value)
+  const handleControlledChange = useCallback((field, value) => {
+    setControlled(prev => ({ ...prev, [field]: value }))
+    // Validate after state update
+    setTimeout(() => {
+      setErrors(prev => {
+        const errs = { ...prev }
+        if (field === 'title') {
+          if (!value.trim()) errs.title = 'Title is required.'
+          else if (value.trim().length < 3) errs.title = 'Title must be at least 3 characters.'
+          else delete errs.title
+        }
+        return errs
+      })
+    }, 0)
+  }, [])
+
+  const handleBlurUncontrolled = useCallback((field) => {
     touch(field)
-  }, [handleChange, touch])
+    const val = field === 'ingredients'
+      ? ingredientsRef.current?.value || ''
+      : descriptionRef.current?.value || ''
+    setErrors(prev => {
+      const next = { ...prev }
+      if (!val.trim()) next[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required.`
+      else delete next[field]
+      return next
+    })
+  }, [touch])
 
   const handleTagToggle = useCallback((tag) => {
-    const current = form.tags || []
-    const newTags = current.includes(tag)
-      ? current.filter(t => t !== tag)
-      : [...current, tag]
-    handleChange('tags', newTags)
-  }, [form.tags, handleChange])
+    setControlled(prev => {
+      const current = prev.tags || []
+      const newTags = current.includes(tag)
+        ? current.filter(t => t !== tag)
+        : [...current, tag]
+      return { ...prev, tags: newTags }
+    })
+  }, [])
 
+  // ── Compute isValid for button state ──
+  const currentErrors = validate()
+  const isValid = Object.keys(currentErrors).length === 0
+
+  // ── Submit ──
   function submit(e) {
     e.preventDefault()
-    setTouched({ title: true, ingredients: true, description: true, timerMinutes: true })
-    if (!isValid) return
 
-    if (isEditing) {
-      updateRecipe({ ...editingRecipe, ...form })
-    } else {
-      addRecipe({ ...form })
+    const ingredients = ingredientsRef.current?.value || ''
+    const description = descriptionRef.current?.value || ''
+
+    // Touch all fields
+    setTouched({ title: true, ingredients: true, description: true, timerMinutes: true })
+
+    const errs = validate({ ingredients, description })
+    setErrors(errs)
+    if (Object.keys(errs).length > 0) return
+
+    const formData = {
+      ...controlled,
+      ingredients,
+      description
     }
 
-    reset()
+    if (isEditing) {
+      updateRecipe({ ...editingRecipe, ...formData })
+    } else {
+      addRecipe({ ...formData })
+    }
+
+    // Reset
+    setControlled(EMPTY_CONTROLLED)
+    if (ingredientsRef.current) ingredientsRef.current.value = ''
+    if (descriptionRef.current) descriptionRef.current.value = ''
     setTouched({})
+    setErrors({})
     clearTimeout(successTimer.current)
     setSuccess(true)
     successTimer.current = setTimeout(() => setSuccess(false), 2500)
@@ -97,8 +168,11 @@ export default React.memo(function RecipeForm() {
 
   function handleCancel() {
     setEditingRecipe(null)
-    reset()
+    setControlled(EMPTY_CONTROLLED)
+    if (ingredientsRef.current) ingredientsRef.current.value = ''
+    if (descriptionRef.current) descriptionRef.current.value = ''
     setTouched({})
+    setErrors({})
   }
 
   return (
@@ -116,44 +190,48 @@ export default React.memo(function RecipeForm() {
         </div>
       )}
 
-      {/* ─── Title ─── */}
+      {/* ─── Title (Controlled) ─── */}
       <div className="form-row">
         <div className="field-wrap">
           <input
             data-testid="input-title"
-            className={`field title ${touched.title && errors.title ? 'field-error' : ''}`}
+            className={`field title ${touched.title && currentErrors.title ? 'field-error' : ''}`}
             placeholder="Title (min 3 chars)"
-            value={form.title}
-            onChange={e => handleFieldChange('title', e.target.value)}
+            value={controlled.title}
+            onChange={e => {
+              handleControlledChange('title', e.target.value)
+              touch('title')
+            }}
             onBlur={() => touch('title')}
           />
-          {touched.title && errors.title && (
-            <span className="field-error-msg" role="alert">{errors.title}</span>
+          {touched.title && currentErrors.title && (
+            <span className="field-error-msg" role="alert">{currentErrors.title}</span>
           )}
         </div>
 
+        {/* ─── Category (Controlled) ─── */}
         <select
           data-testid="select-category"
           className="field category"
-          value={form.category}
-          onChange={e => handleChange('category', e.target.value)}
+          value={controlled.category}
+          onChange={e => handleControlledChange('category', e.target.value)}
         >
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
-      {/* ─── Tags ─── */}
+      {/* ─── Tags (Controlled) ─── */}
       <div className="form-block">
         <label className="block-label">Tags</label>
         <div className="tags-group">
           {TAGS.map(tag => (
             <label
               key={tag}
-              className={`tag-checkbox ${form.tags.includes(tag) ? 'checked' : ''}`}
+              className={`tag-checkbox ${controlled.tags.includes(tag) ? 'checked' : ''}`}
             >
               <input
                 type="checkbox"
-                checked={form.tags.includes(tag)}
+                checked={controlled.tags.includes(tag)}
                 onChange={() => handleTagToggle(tag)}
               />
               {tag}
@@ -162,58 +240,60 @@ export default React.memo(function RecipeForm() {
         </div>
       </div>
 
-      {/* ─── Ingredients ─── */}
+      {/* ─── Ingredients (Uncontrolled via useRef) ─── */}
       <div className="form-block">
         <label className="block-label">Ingredients</label>
         <textarea
+          ref={ingredientsRef}
           data-testid="input-ingredients"
           className={`ingredients ${touched.ingredients && errors.ingredients ? 'field-error' : ''}`}
           placeholder="Ingredients (comma separated)"
-          value={form.ingredients}
-          onChange={e => handleFieldChange('ingredients', e.target.value)}
-          onBlur={() => touch('ingredients')}
+          defaultValue=""
+          onBlur={() => handleBlurUncontrolled('ingredients')}
         />
         {touched.ingredients && errors.ingredients && (
           <span className="field-error-msg" role="alert">{errors.ingredients}</span>
         )}
       </div>
 
-      {/* ─── Description ─── */}
+      {/* ─── Description / Instructions (Uncontrolled via useRef) ─── */}
       <div className="form-block">
         <label className="block-label">Instructions / Description</label>
         <textarea
-          ref={descRef}
+          ref={descriptionRef}
           data-testid="input-description"
           className={`description ${touched.description && errors.description ? 'field-error' : ''}`}
           placeholder="Describe the preparation steps..."
-          value={form.description}
-          onChange={e => handleFieldChange('description', e.target.value)}
-          onBlur={() => touch('description')}
+          defaultValue=""
+          onBlur={() => handleBlurUncontrolled('description')}
         />
         {touched.description && errors.description && (
           <span className="field-error-msg" role="alert">{errors.description}</span>
         )}
       </div>
 
-      {/* ─── Cook Time ─── */}
+      {/* ─── Cook Time (Controlled) ─── */}
       <div className="form-block">
         <label className="block-label">Cook Time (minutes)</label>
         <input
           data-testid="input-timer"
           type="number"
-          className={`field ${touched.timerMinutes && errors.timerMinutes ? 'field-error' : ''}`}
+          className={`field ${touched.timerMinutes && currentErrors.timerMinutes ? 'field-error' : ''}`}
           min="1"
           max="600"
-          value={form.timerMinutes}
-          onChange={e => handleFieldChange('timerMinutes', Number(e.target.value))}
+          value={controlled.timerMinutes}
+          onChange={e => {
+            handleControlledChange('timerMinutes', Number(e.target.value))
+            touch('timerMinutes')
+          }}
           onBlur={() => touch('timerMinutes')}
         />
-        {touched.timerMinutes && errors.timerMinutes && (
-          <span className="field-error-msg" role="alert">{errors.timerMinutes}</span>
+        {touched.timerMinutes && currentErrors.timerMinutes && (
+          <span className="field-error-msg" role="alert">{currentErrors.timerMinutes}</span>
         )}
       </div>
 
-      {/* ─── Rating ─── */}
+      {/* ─── Rating (Controlled) ─── */}
       <div className="form-row range-row">
         <div className="range-wrap">
           <label className="block-label">Rating</label>
@@ -222,11 +302,11 @@ export default React.memo(function RecipeForm() {
             type="range"
             min="1"
             max="5"
-            value={form.rating}
-            onChange={e => handleChange('rating', Number(e.target.value))}
+            value={controlled.rating}
+            onChange={e => handleControlledChange('rating', Number(e.target.value))}
           />
         </div>
-        <div className="range-value">{form.rating}</div>
+        <div className="range-value">{controlled.rating}</div>
       </div>
 
       {/* ─── Actions ─── */}

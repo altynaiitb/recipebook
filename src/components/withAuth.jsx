@@ -1,0 +1,37 @@
+import React from 'react'
+import { useRecipes } from '../context/RecipeContext'
+
+// ============================================
+// LAB 7 Task 2: Higher-Order Component (HOC)
+// Protects wrapped components behind authentication.
+// If isAuthenticated is false, renders "Access Denied".
+// ============================================
+
+export default function withAuth(WrappedComponent) {
+  function AuthGuard(props) {
+    const { isAuthenticated } = useRecipes()
+
+    if (!isAuthenticated) {
+      return (
+        <div className="access-denied" style={{
+          padding: '2rem',
+          textAlign: 'center',
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: '1rem',
+          border: '1px solid rgba(255,255,255,0.08)'
+        }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔒</div>
+          <h3 style={{ margin: '0 0 0.5rem' }}>Access Denied</h3>
+          <p style={{ opacity: 0.6, margin: 0 }}>
+            You must be logged in to access this feature.
+          </p>
+        </div>
+      )
+    }
+
+    return <WrappedComponent {...props} />
+  }
+
+  AuthGuard.displayName = `withAuth(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`
+  return AuthGuard
+}

@@ -5,18 +5,21 @@ import { useFilter }    from '../hooks/useFilter'
 import { useModal }     from '../hooks/useModal'
 import RecipeForm  from '../components/RecipeForm'
 import RecipeList  from '../components/RecipeList'
+import RecipeCard  from '../components/RecipeCard'
 import Filters     from '../components/Filters'
 import CookingTimer from '../components/CookingTimer'
 import Modal       from '../components/Modal'
 import ConfirmModal from '../components/ConfirmModal'
+import withAuth    from '../components/withAuth'
 
 // ============================================
-// LAB 6 REQUIREMENTS SATISFIED HERE:
-// Задача 3: useFilter — фильтрация рецептов (поиск, категория, теги)
-// Задача 4: useModal  — управление модалками (просмотр, подтверждение удаления)
-// Задача 8: удаление через API с подтверждением
-// (Lab 5 требования сохранены: useMemo для сортировки, раздельные контексты)
+// LAB 7 REQUIREMENTS:
+// Task 1: RecipeList uses render-props (children as function)
+// Task 2: RecipeForm wrapped with withAuth HOC
 // ============================================
+
+// Task 2: Wrap RecipeForm with auth guard
+const ProtectedRecipeForm = withAuth(RecipeForm)
 
 export default function RecipesPage() {
   const { recipes, isLoading, stats, deleteRecipe } = useRecipes()
@@ -25,7 +28,7 @@ export default function RecipesPage() {
   const [sortBy, setSortBy]               = useState('alpha')
   const [showFavorites, setShowFavorites] = useState(false)
 
-  // ── LAB 6 Задача 3: useFilter — кастомный хук фильтрации ──────────────
+  // ── useFilter — custom filter hook ──
   const {
     filtered: filteredRecipes,
     filters,
@@ -37,32 +40,20 @@ export default function RecipesPage() {
     tagsField:     'tags'
   })
 
-  // Дополнительный фильтр по избранному (не входит в useFilter,
-  // поскольку избранное хранится в отдельном контексте по ID)
+  // Favorites filter (separate context, applied on top)
   const afterFavoriteFilter = useMemo(() => {
     return showFavorites
       ? filteredRecipes.filter(r => favoriteIds.has(r.id))
       : filteredRecipes
   }, [filteredRecipes, showFavorites, favoriteIds])
 
-  // Сортировка финального списка
-  const sortedRecipes = useMemo(() => {
-    return [...afterFavoriteFilter].sort((a, b) => {
-      if (sortBy === 'alpha')  return a.title.localeCompare(b.title)
-      if (sortBy === 'rating') return b.rating - a.rating
-      return 0
-    })
-  }, [afterFavoriteFilter, sortBy])
-
-  // ── LAB 6 Задача 4: useModal — просмотр деталей рецепта ───────────────
+  // ── Modals ──
   const viewModal   = useModal()
-  // ── LAB 6 Задача 4: useModal — подтверждение удаления ─────────────────
   const deleteModal = useModal()
 
   const openView    = useCallback((recipe) => viewModal.open(recipe), [viewModal])
   const closeView   = useCallback(() => viewModal.close(), [viewModal])
 
-  // Задача 8: удаление с подтверждением
   const requestDelete = useCallback((recipe) => deleteModal.open(recipe), [deleteModal])
 
   const confirmDelete = useCallback(() => {
@@ -72,7 +63,7 @@ export default function RecipesPage() {
     deleteModal.close()
   }, [deleteModal, deleteRecipe])
 
-  // Тег-фильтры — переключение через updateFilter
+  // Tag filters
   const handleTagFilter = useCallback((tag) => {
     const current = filters.tags || []
     const next = current.includes(tag)
@@ -86,7 +77,7 @@ export default function RecipesPage() {
       <header className="page-header">
         <h1>All Recipes</h1>
         <div className="counters">
-          <div className="counter">Showing: {sortedRecipes.length} of {stats.total}</div>
+          <div className="counter">Showing: {afterFavoriteFilter.length} of {stats.total}</div>
           <div className="counter favorites-counter">❤️ Favorites: {favoritesCount}</div>
         </div>
       </header>
@@ -111,7 +102,8 @@ export default function RecipesPage() {
 
       <main className="recipes-layout">
         <section className="left">
-          <RecipeForm />
+          {/* Task 2: Protected with withAuth */}
+          <ProtectedRecipeForm />
           <CookingTimer />
           <Filters
             search={filters.search}
@@ -132,22 +124,33 @@ export default function RecipesPage() {
               <div className="loading-text">Loading recipes…</div>
             </div>
           ) : (
+            /* Task 1: Render Props — children as a function */
             <RecipeList
-              recipes={sortedRecipes}
-              onOpen={openView}
-              onDelete={requestDelete}
+              recipes={afterFavoriteFilter}
+              sortBy={sortBy}
               showFavorites={showFavorites}
-            />
+            >
+              {(processedRecipes) =>
+                processedRecipes.map(recipe => (
+                  <RecipeCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    onOpen={openView}
+                    onDelete={requestDelete}
+                  />
+                ))
+              }
+            </RecipeList>
           )}
         </section>
       </main>
 
-      {/* LAB 6 Задача 4: useModal — просмотр деталей */}
+      {/* View modal (Lazy loaded content) */}
       {viewModal.isOpen && viewModal.data && (
         <Modal recipe={viewModal.data} onClose={closeView} />
       )}
 
-      {/* LAB 6 Задача 4 + 8: useModal — подтверждение удаления */}
+      {/* Delete confirmation modal */}
       {deleteModal.isOpen && (
         <ConfirmModal
           title="Delete Recipe"

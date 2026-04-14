@@ -10,7 +10,7 @@ import { useFavorites } from '../context/FavoritesContext'
 // ============================================
 
 export default function NavBar() {
-  const { stats } = useRecipes()
+  const { stats, isAuthenticated, login, logout } = useRecipes()
   // LAB 5 (Задача 11): favorites count from the split FavoritesContext
   const { favoritesCount } = useFavorites()
 
@@ -63,6 +63,15 @@ export default function NavBar() {
           </NavLink>
         </li>
       </ul>
+
+      {/* LAB 7 Task 2: Toggle auth so withAuth HOC can be visually tested */}
+      <button
+        className={`btn auth-toggle-btn ${isAuthenticated ? 'auth-logout' : 'auth-login'}`}
+        onClick={isAuthenticated ? logout : login}
+        title={isAuthenticated ? 'Log out' : 'Log in'}
+      >
+        {isAuthenticated ? '🔓 Logout' : '🔒 Login'}
+      </button>
     </nav>
   )
 }

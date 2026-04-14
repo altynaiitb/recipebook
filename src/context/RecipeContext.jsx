@@ -29,6 +29,11 @@ export function RecipeProvider({ children }) {
   const [isLoading, setIsLoading]     = useState(true)
   const [apiError, setApiError]       = useState(null)
 
+  // LAB 7 Task 2: Authentication state for withAuth HOC
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
+  const login  = useCallback(() => setIsAuthenticated(true), [])
+  const logout = useCallback(() => setIsAuthenticated(false), [])
+
   // Edit mode (Lab 5 Задача 3)
   const [editingRecipe, setEditingRecipe] = useState(null)
 
@@ -222,6 +227,11 @@ export function RecipeProvider({ children }) {
     editingRecipe,
     setEditingRecipe,
     stats,
+
+    // LAB 7 Task 2: Auth state
+    isAuthenticated,
+    login,
+    logout,
 
     // Timer state
     timerSeconds,
