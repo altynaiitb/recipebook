@@ -5,12 +5,6 @@ import '@testing-library/jest-dom'
 
 import RecipeList from './RecipeList'
 
-// ============================================
-// LAB 7 Task 6: Render Props Test
-// Verifies that the render function (children) is called
-// with correctly filtered and sorted data.
-// ============================================
-
 const recipesMock = [
   { id: 1, title: 'Pizza',   category: 'Dinner',    rating: 4, tags: [] },
   { id: 2, title: 'Pasta',   category: 'Dinner',    rating: 5, tags: [] },

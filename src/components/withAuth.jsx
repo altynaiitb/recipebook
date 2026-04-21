@@ -2,13 +2,17 @@ import React from 'react'
 import { useRecipes } from '../context/RecipeContext'
 
 // ============================================
-// LAB 7 Task 2: Higher-Order Component (HOC)
-// Protects wrapped components behind authentication.
-// If isAuthenticated is false, renders "Access Denied".
+// LAB 8 SECURITY: withAuth HOC — updated for MFA
+// Checks 'isAuthenticated' which is now true ONLY when
+// both login AND MFA verification are complete.
+// Backward-compatible: withAuth.test.jsx mocks { isAuthenticated }
+// and that behavior is preserved exactly.
 // ============================================
 
 export default function withAuth(WrappedComponent) {
   function AuthGuard(props) {
+    // isAuthenticated === true only when authStage === 'authenticated'
+    // (i.e., fully authenticated through MFA)
     const { isAuthenticated } = useRecipes()
 
     if (!isAuthenticated) {

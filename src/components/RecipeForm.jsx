@@ -1,63 +1,83 @@
-import React, { useRef, useLayoutEffect, useEffect, useCallback, useState } from 'react'
+import React, { useRef, useLayoutEffect, useEffect, useCallback } from 'react'
 import { useRecipes, CATEGORIES, TAGS } from '../context/RecipeContext'
+import { useForm } from '../hooks/useForm'
 
 // ============================================
-// LAB 7 Task 4: Hybrid Forms
-// Controlled: title, category (via useState)
-// Uncontrolled: ingredients, description (via useRef)
-// Tags, rating, timerMinutes remain controlled.
+// LAB 8: RecipeForm refactored
+// - Controlled fields use useForm hook (title, category, tags, rating, timerMinutes)
+// - Uncontrolled fields (ingredients, description) remain via useRef → Hybrid pattern
+// - Real-time validation via useForm's validationRules
+// - Accepts onClose prop → called after submit or cancel
+// - Success notification handled by RecipeContext (toast system)
 // ============================================
 
-const EMPTY_CONTROLLED = {
-  title: '',
-  category: CATEGORIES[0],
-  tags: [],
-  rating: 4,
+const INITIAL_VALUES = {
+  title:        '',
+  category:     CATEGORIES[0],
+  tags:         [],
+  rating:       4,
   timerMinutes: 5
 }
 
-export default React.memo(function RecipeForm() {
+const VALIDATION_RULES = {
+  title: (v) => {
+    if (!v.trim()) return 'Title is required.'
+    if (v.trim().length < 3) return 'Title must be at least 3 characters.'
+    return null
+  },
+  timerMinutes: (v) => {
+    if (Number(v) < 1) return 'Timer must be at least 1 minute.'
+    return null
+  }
+}
+
+export default React.memo(function RecipeForm({ onClose }) {
   const { addRecipe, updateRecipe, editingRecipe, setEditingRecipe } = useRecipes()
 
   const isEditing = Boolean(editingRecipe)
 
-  // ── Controlled state (title, category, tags, rating, timer) ──
-  const [controlled, setControlled] = useState(EMPTY_CONTROLLED)
+  // ── useForm for controlled fields ─────────────────────────────────────
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    touch,
+    validateAll,
+    reset,
+    setValues
+  } = useForm(INITIAL_VALUES, VALIDATION_RULES)
 
-  // ── Uncontrolled refs (ingredients, description / instructions) ──
+  // ── useRef for large text areas (Hybrid pattern) ──────────────────────
   const ingredientsRef = useRef(null)
   const descriptionRef = useRef(null)
 
-  const [touched, setTouched]   = useState({})
-  const [errors, setErrors]     = useState({})
-  const [success, setSuccess]   = useState(false)
-  const [isActive, setIsActive] = useState(false)
-  const successTimer = useRef(null)
+  // ── Uncontrolled field errors (managed locally) ───────────────────────
+  const [uncontrolledErrors, setUncontrolledErrors] = React.useState({})
+  const [uncontrolledTouched, setUncontrolledTouched] = React.useState({})
 
-  // ── Sync when entering edit mode ──
+  // ── Sync when entering / leaving edit mode ────────────────────────────
   useEffect(() => {
     if (editingRecipe) {
-      setControlled({
+      setValues({
         title:        editingRecipe.title        || '',
         category:     editingRecipe.category     || CATEGORIES[0],
         tags:         editingRecipe.tags         || [],
         rating:       editingRecipe.rating       ?? 4,
         timerMinutes: editingRecipe.timerMinutes ?? 5
       })
-      // Sync uncontrolled refs
       if (ingredientsRef.current) ingredientsRef.current.value = editingRecipe.ingredients || ''
       if (descriptionRef.current) descriptionRef.current.value = editingRecipe.description || ''
     } else {
-      setControlled(EMPTY_CONTROLLED)
+      reset()
       if (ingredientsRef.current) ingredientsRef.current.value = ''
       if (descriptionRef.current) descriptionRef.current.value = ''
     }
-    setTouched({})
-    setErrors({})
-    setSuccess(false)
-  }, [editingRecipe])
+    setUncontrolledErrors({})
+    setUncontrolledTouched({})
+  }, [editingRecipe, setValues, reset])
 
-  // ── Auto-resize description textarea ──
+  // ── Auto-resize description textarea ─────────────────────────────────
   useLayoutEffect(() => {
     const el = descriptionRef.current
     if (!el) return
@@ -65,173 +85,135 @@ export default React.memo(function RecipeForm() {
     el.style.height = `${el.scrollHeight}px`
   })
 
-  // ── Validation helper ──
-  const validate = useCallback((opts = {}) => {
-    const title = opts.title ?? controlled.title
-    const ingredients = opts.ingredients ?? (ingredientsRef.current?.value || '')
-    const description = opts.description ?? (descriptionRef.current?.value || '')
-    const timerMinutes = opts.timerMinutes ?? controlled.timerMinutes
-
-    const errs = {}
-    if (!title.trim()) errs.title = 'Title is required.'
-    else if (title.trim().length < 3) errs.title = 'Title must be at least 3 characters.'
-    if (!ingredients.trim()) errs.ingredients = 'Ingredients are required.'
-    if (!description.trim()) errs.description = 'Description is required.'
-    if (Number(timerMinutes) < 1) errs.timerMinutes = 'Timer must be at least 1 minute.'
-    return errs
-  }, [controlled.title, controlled.timerMinutes])
-
-  // ── Helpers ──
-  const touch = useCallback((field) => {
-    setTouched(prev => ({ ...prev, [field]: true }))
-  }, [])
-
-  const handleControlledChange = useCallback((field, value) => {
-    setControlled(prev => ({ ...prev, [field]: value }))
-    // Validate after state update
-    setTimeout(() => {
-      setErrors(prev => {
-        const errs = { ...prev }
-        if (field === 'title') {
-          if (!value.trim()) errs.title = 'Title is required.'
-          else if (value.trim().length < 3) errs.title = 'Title must be at least 3 characters.'
-          else delete errs.title
-        }
-        return errs
-      })
-    }, 0)
-  }, [])
-
-  const handleBlurUncontrolled = useCallback((field) => {
-    touch(field)
+  // ── Uncontrolled field validation ─────────────────────────────────────
+  const validateUncontrolled = useCallback((field) => {
     const val = field === 'ingredients'
       ? ingredientsRef.current?.value || ''
       : descriptionRef.current?.value || ''
-    setErrors(prev => {
+    const err = !val.trim()
+      ? `${field.charAt(0).toUpperCase() + field.slice(1)} is required.`
+      : null
+    setUncontrolledErrors(prev => {
       const next = { ...prev }
-      if (!val.trim()) next[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required.`
+      if (err) next[field] = err
       else delete next[field]
       return next
     })
-  }, [touch])
-
-  const handleTagToggle = useCallback((tag) => {
-    setControlled(prev => {
-      const current = prev.tags || []
-      const newTags = current.includes(tag)
-        ? current.filter(t => t !== tag)
-        : [...current, tag]
-      return { ...prev, tags: newTags }
-    })
+    return err
   }, [])
 
-  // ── Compute isValid for button state ──
-  const currentErrors = validate()
-  const isValid = Object.keys(currentErrors).length === 0
+  const handleBlurUncontrolled = useCallback((field) => {
+    setUncontrolledTouched(prev => ({ ...prev, [field]: true }))
+    validateUncontrolled(field)
+  }, [validateUncontrolled])
 
-  // ── Submit ──
-  function submit(e) {
+  // ── Tag toggle ────────────────────────────────────────────────────────
+  const handleTagToggle = useCallback((tag) => {
+    const current = values.tags || []
+    const newTags = current.includes(tag)
+      ? current.filter(t => t !== tag)
+      : [...current, tag]
+    handleChange('tags', newTags)
+  }, [values.tags, handleChange])
+
+  // ── Compute overall validity ──────────────────────────────────────────
+  const ingVal  = ingredientsRef.current?.value || ''
+  const descVal = descriptionRef.current?.value || ''
+  const hasControlledErrors   = Object.keys(errors).length > 0
+  const hasUncontrolledErrors = !ingVal.trim() || !descVal.trim()
+  const isValid = !hasControlledErrors && !hasUncontrolledErrors
+
+  // ── Submit ────────────────────────────────────────────────────────────
+  function handleSubmit(e) {
     e.preventDefault()
 
-    const ingredients = ingredientsRef.current?.value || ''
-    const description = descriptionRef.current?.value || ''
+    const controlledValid = validateAll()
+    const ingErr  = validateUncontrolled('ingredients')
+    const descErr = validateUncontrolled('description')
+    setUncontrolledTouched({ ingredients: true, description: true })
 
-    // Touch all fields
-    setTouched({ title: true, ingredients: true, description: true, timerMinutes: true })
-
-    const errs = validate({ ingredients, description })
-    setErrors(errs)
-    if (Object.keys(errs).length > 0) return
+    if (!controlledValid || ingErr || descErr) return
 
     const formData = {
-      ...controlled,
-      ingredients,
-      description
+      ...values,
+      ingredients: ingredientsRef.current?.value || '',
+      description: descriptionRef.current?.value || ''
     }
 
     if (isEditing) {
       updateRecipe({ ...editingRecipe, ...formData })
     } else {
-      addRecipe({ ...formData })
+      addRecipe(formData)
     }
 
-    // Reset
-    setControlled(EMPTY_CONTROLLED)
+    // Reset form
+    reset()
     if (ingredientsRef.current) ingredientsRef.current.value = ''
     if (descriptionRef.current) descriptionRef.current.value = ''
-    setTouched({})
-    setErrors({})
-    clearTimeout(successTimer.current)
-    setSuccess(true)
-    successTimer.current = setTimeout(() => setSuccess(false), 2500)
+    setUncontrolledErrors({})
+    setUncontrolledTouched({})
+
+    if (onClose) onClose()
   }
 
   function handleCancel() {
     setEditingRecipe(null)
-    setControlled(EMPTY_CONTROLLED)
+    reset()
     if (ingredientsRef.current) ingredientsRef.current.value = ''
     if (descriptionRef.current) descriptionRef.current.value = ''
-    setTouched({})
-    setErrors({})
+    setUncontrolledErrors({})
+    setUncontrolledTouched({})
+    if (onClose) onClose()
   }
 
   return (
     <form
-      className={`recipe-form ${isActive ? 'active' : ''} ${isEditing ? 'editing' : ''}`}
-      onSubmit={submit}
-      onMouseDown={() => setIsActive(true)}
-      onMouseUp={() => setIsActive(false)}
+      className={`recipe-form ${isEditing ? 'editing' : ''}`}
+      onSubmit={handleSubmit}
+      noValidate
     >
-      <h2>{isEditing ? `✏️ Edit: ${editingRecipe.title}` : 'Add Recipe'}</h2>
-
-      {success && (
-        <div className="success" role="status">
-          {isEditing ? 'Recipe updated!' : 'Recipe added!'}
-        </div>
-      )}
-
-      {/* ─── Title (Controlled) ─── */}
+      {/* ─── Title (Controlled via useForm) ─── */}
       <div className="form-row">
         <div className="field-wrap">
           <input
             data-testid="input-title"
-            className={`field title ${touched.title && currentErrors.title ? 'field-error' : ''}`}
+            className={`field title ${touched.title && errors.title ? 'field-error' : ''}`}
             placeholder="Title (min 3 chars)"
-            value={controlled.title}
+            value={values.title}
             onChange={e => {
-              handleControlledChange('title', e.target.value)
+              handleChange('title', e.target.value)
               touch('title')
             }}
             onBlur={() => touch('title')}
           />
-          {touched.title && currentErrors.title && (
-            <span className="field-error-msg" role="alert">{currentErrors.title}</span>
+          {touched.title && errors.title && (
+            <span className="field-error-msg" role="alert">{errors.title}</span>
           )}
         </div>
 
-        {/* ─── Category (Controlled) ─── */}
+        {/* ─── Category (Controlled via useForm) ─── */}
         <select
           data-testid="select-category"
           className="field category"
-          value={controlled.category}
-          onChange={e => handleControlledChange('category', e.target.value)}
+          value={values.category}
+          onChange={e => handleChange('category', e.target.value)}
         >
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
-      {/* ─── Tags (Controlled) ─── */}
+      {/* ─── Tags (Controlled via useForm) ─── */}
       <div className="form-block">
         <label className="block-label">Tags</label>
         <div className="tags-group">
           {TAGS.map(tag => (
             <label
               key={tag}
-              className={`tag-checkbox ${controlled.tags.includes(tag) ? 'checked' : ''}`}
+              className={`tag-checkbox ${(values.tags || []).includes(tag) ? 'checked' : ''}`}
             >
               <input
                 type="checkbox"
-                checked={controlled.tags.includes(tag)}
+                checked={(values.tags || []).includes(tag)}
                 onChange={() => handleTagToggle(tag)}
               />
               {tag}
@@ -246,13 +228,13 @@ export default React.memo(function RecipeForm() {
         <textarea
           ref={ingredientsRef}
           data-testid="input-ingredients"
-          className={`ingredients ${touched.ingredients && errors.ingredients ? 'field-error' : ''}`}
+          className={`ingredients ${uncontrolledTouched.ingredients && uncontrolledErrors.ingredients ? 'field-error' : ''}`}
           placeholder="Ingredients (comma separated)"
           defaultValue=""
           onBlur={() => handleBlurUncontrolled('ingredients')}
         />
-        {touched.ingredients && errors.ingredients && (
-          <span className="field-error-msg" role="alert">{errors.ingredients}</span>
+        {uncontrolledTouched.ingredients && uncontrolledErrors.ingredients && (
+          <span className="field-error-msg" role="alert">{uncontrolledErrors.ingredients}</span>
         )}
       </div>
 
@@ -262,38 +244,38 @@ export default React.memo(function RecipeForm() {
         <textarea
           ref={descriptionRef}
           data-testid="input-description"
-          className={`description ${touched.description && errors.description ? 'field-error' : ''}`}
+          className={`description ${uncontrolledTouched.description && uncontrolledErrors.description ? 'field-error' : ''}`}
           placeholder="Describe the preparation steps..."
           defaultValue=""
           onBlur={() => handleBlurUncontrolled('description')}
         />
-        {touched.description && errors.description && (
-          <span className="field-error-msg" role="alert">{errors.description}</span>
+        {uncontrolledTouched.description && uncontrolledErrors.description && (
+          <span className="field-error-msg" role="alert">{uncontrolledErrors.description}</span>
         )}
       </div>
 
-      {/* ─── Cook Time (Controlled) ─── */}
+      {/* ─── Cook Time (Controlled via useForm) ─── */}
       <div className="form-block">
         <label className="block-label">Cook Time (minutes)</label>
         <input
           data-testid="input-timer"
           type="number"
-          className={`field ${touched.timerMinutes && currentErrors.timerMinutes ? 'field-error' : ''}`}
+          className={`field ${touched.timerMinutes && errors.timerMinutes ? 'field-error' : ''}`}
           min="1"
           max="600"
-          value={controlled.timerMinutes}
+          value={values.timerMinutes}
           onChange={e => {
-            handleControlledChange('timerMinutes', Number(e.target.value))
+            handleChange('timerMinutes', Number(e.target.value))
             touch('timerMinutes')
           }}
           onBlur={() => touch('timerMinutes')}
         />
-        {touched.timerMinutes && currentErrors.timerMinutes && (
-          <span className="field-error-msg" role="alert">{currentErrors.timerMinutes}</span>
+        {touched.timerMinutes && errors.timerMinutes && (
+          <span className="field-error-msg" role="alert">{errors.timerMinutes}</span>
         )}
       </div>
 
-      {/* ─── Rating (Controlled) ─── */}
+      {/* ─── Rating (Controlled via useForm) ─── */}
       <div className="form-row range-row">
         <div className="range-wrap">
           <label className="block-label">Rating</label>
@@ -302,20 +284,18 @@ export default React.memo(function RecipeForm() {
             type="range"
             min="1"
             max="5"
-            value={controlled.rating}
-            onChange={e => handleControlledChange('rating', Number(e.target.value))}
+            value={values.rating}
+            onChange={e => handleChange('rating', Number(e.target.value))}
           />
         </div>
-        <div className="range-value">{controlled.rating}</div>
+        <div className="range-value">{values.rating}</div>
       </div>
 
       {/* ─── Actions ─── */}
-      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-        {isEditing && (
-          <button type="button" className="btn" onClick={handleCancel}>
-            Cancel
-          </button>
-        )}
+      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+        <button type="button" className="btn" onClick={handleCancel}>
+          Cancel
+        </button>
         <button
           type="submit"
           className="btn primary"

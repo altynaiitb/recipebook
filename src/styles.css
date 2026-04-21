@@ -1993,3 +1993,954 @@ main {
   background: linear-gradient(90deg, #fca5a5, #f87171);
   color: #7f1d1d;
 }
+
+/* ============================================
+   LAB 8: NOTIFICATION TOAST SYSTEM
+   ============================================ */
+
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+  width: calc(100vw - 48px);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.10);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  pointer-events: all;
+  cursor: pointer;
+  animation: toastSlideIn 0.32s cubic-bezier(0.22, 0.9, 0.32, 1.1) both;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.toast-success {
+  background: linear-gradient(135deg,
+    rgba(52, 211, 153, 0.92) 0%,
+    rgba(16, 185, 129, 0.92) 100%);
+  color: #fff;
+  border-color: rgba(110, 231, 183, 0.4);
+}
+
+.toast-error {
+  background: linear-gradient(135deg,
+    rgba(248, 113, 113, 0.95) 0%,
+    rgba(239, 68, 68, 0.95) 100%);
+  color: #fff;
+  border-color: rgba(252, 165, 165, 0.4);
+}
+
+.toast-message {
+  flex: 1;
+  word-break: break-word;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.toast-close:hover {
+  color: #fff;
+  transform: scale(1.2);
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(60px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* ============================================
+   LAB 8: FORM MODAL (Add / Edit Recipe)
+   ============================================ */
+
+.form-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 16, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+  animation: backdropFadeIn 0.22s ease both;
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.form-modal {
+  background: rgba(255, 252, 250, 0.97);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid rgba(239, 107, 86, 0.14);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow:
+    0 40px 100px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  animation: formModalSlideIn 0.3s cubic-bezier(0.22, 0.9, 0.32, 1.08) both;
+}
+
+@keyframes formModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.form-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid rgba(239, 107, 86, 0.10);
+  position: sticky;
+  top: 0;
+  background: rgba(255, 252, 250, 0.98);
+  backdrop-filter: blur(8px);
+  border-radius: 20px 20px 0 0;
+  z-index: 1;
+}
+
+.form-modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0b1220;
+}
+
+.form-modal-close {
+  background: rgba(15, 23, 42, 0.06);
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.form-modal-close:hover {
+  background: rgba(239, 107, 86, 0.12);
+  color: var(--accent);
+  transform: scale(1.1);
+}
+
+.form-modal-body {
+  padding: 20px 24px 24px;
+}
+
+/* Flatten the recipe-form card styles when inside form-modal */
+.form-modal-body .recipe-form {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ============================================
+   LAB 8: ADD RECIPE BUTTON (Left sidebar)
+   ============================================ */
+
+.add-recipe-btn {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent) 0%, #f26a55 60%, #ff8c78 100%);
+  color: white;
+  box-shadow:
+    0 8px 24px rgba(239, 107, 86, 0.30),
+    0 2px 6px rgba(239, 107, 86, 0.20);
+  transition: transform 0.18s cubic-bezier(0.22, 0.9, 0.32, 1.1),
+              box-shadow 0.18s ease,
+              filter 0.18s ease;
+}
+
+.add-recipe-btn:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow:
+    0 14px 36px rgba(239, 107, 86, 0.38),
+    0 4px 10px rgba(239, 107, 86, 0.22);
+  filter: brightness(1.05);
+}
+
+.add-recipe-btn:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: 0 4px 12px rgba(239, 107, 86, 0.20);
+}
+
+/* ============================================
+   LAB 8: ENHANCED RESPONSIVE (Mobile-first)
+   ============================================ */
+
+/* Navbar: hide text labels on very small screens */
+@media (max-width: 480px) {
+  .nav-text {
+    display: none;
+  }
+  .nav-links {
+    gap: 4px;
+  }
+  .brand-text {
+    font-size: 14px;
+  }
+  .toast-container {
+    bottom: 12px;
+    right: 12px;
+    width: calc(100vw - 24px);
+    max-width: 100%;
+  }
+  .form-modal {
+    max-height: 95vh;
+    border-radius: 16px;
+  }
+  .form-modal-header {
+    padding: 16px 18px 12px;
+  }
+  .form-modal-body {
+    padding: 14px 18px 18px;
+  }
+}
+
+/* Recipes layout: stacked on tablet */
+@media (max-width: 768px) {
+  .recipes-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .add-recipe-btn {
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+}
+
+/* Profile page: grid stacks on mobile */
+@media (max-width: 640px) {
+  .profile-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   LAB 8 SECURITY: PRINT PREVENTION
+   Hides all content when printing (prevents print-to-PDF screenshots)
+   ============================================ */
+
+@media print {
+  body * {
+    visibility: hidden !important;
+    display: none !important;
+  }
+  body::after {
+    visibility: visible !important;
+    display: flex !important;
+    content: '🔒 This content is protected by Recipe Book Security and cannot be printed.';
+    position: fixed;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-family: sans-serif;
+    color: #333;
+    text-align: center;
+    padding: 40px;
+  }
+}
+
+/* ============================================
+   LAB 8 SECURITY: SCREENSHOT BLUR
+   Applied by ScreenProtection.jsx on PrintScreen
+   ============================================ */
+
+.screenshot-blur {
+  filter: blur(14px) brightness(0.6) !important;
+  transition: filter 0.15s ease !important;
+  user-select: none !important;
+  pointer-events: none !important;
+}
+
+/* ============================================
+   LAB 8 SECURITY: WATERMARK OVERLAY
+   ============================================ */
+
+.watermark-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0;
+  opacity: 0.045;
+  transform: rotate(-30deg) scale(1.6);
+  transform-origin: center;
+}
+
+.watermark-item {
+  display: block;
+  width: 33.33%;
+  padding: 32px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: 0.05em;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* ============================================
+   LAB 8 SECURITY: MFA MODAL
+   ============================================ */
+
+.mfa-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 15, 0.72);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 20px;
+  animation: backdropFadeIn 0.25s ease both;
+}
+
+.mfa-modal {
+  background: rgba(255, 252, 250, 0.97);
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  border: 1px solid rgba(239, 107, 86, 0.18);
+  border-radius: 24px;
+  padding: 40px 36px 36px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow:
+    0 48px 120px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset;
+  animation: formModalSlideIn 0.32s cubic-bezier(0.22, 0.9, 0.32, 1.1) both;
+}
+
+.mfa-icon-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff3f0 0%, #ffe8e3 100%);
+  border: 2px solid rgba(239, 107, 86, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 24px rgba(239, 107, 86, 0.14);
+}
+
+.mfa-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.mfa-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0b1220;
+}
+
+.mfa-subtitle {
+  margin: 0 0 28px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.mfa-digits {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.mfa-digit {
+  width: 48px;
+  height: 58px;
+  border-radius: 12px;
+  border: 2px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  color: #0b1220;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.12s;
+  outline: none;
+  caret-color: var(--accent);
+}
+
+.mfa-digit:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(239, 107, 86, 0.14);
+  transform: scale(1.06);
+}
+
+.mfa-digit.mfa-digit-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.10);
+  animation: mfaShake 0.4s ease both;
+}
+
+@keyframes mfaShake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+.mfa-error {
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  min-height: 20px;
+}
+
+.mfa-demo-hint {
+  font-size: 13px;
+  color: var(--muted);
+  background: rgba(239, 107, 86, 0.07);
+  border: 1px dashed rgba(239, 107, 86, 0.25);
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin-bottom: 24px;
+  display: inline-block;
+}
+
+.mfa-demo-hint strong {
+  color: var(--accent);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  letter-spacing: 0.15em;
+}
+
+.mfa-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.mfa-cancel-btn {
+  flex: 1;
+  padding: 13px;
+  font-weight: 600;
+  background: rgba(15, 23, 42, 0.06);
+  color: #0b1220;
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+
+.mfa-cancel-btn:hover {
+  background: rgba(15, 23, 42, 0.10);
+}
+
+.mfa-verify-btn {
+  flex: 2;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mfa-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ============================================
+   LAB 8 SECURITY: NAVBAR MFA PENDING BADGE
+   ============================================ */
+
+.mfa-pending-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #c2410c;
+  white-space: nowrap;
+}
+
+.mfa-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f97316;
+  animation: pulse 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.mfa-badge-text {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .mfa-badge-text { display: inline; }
+}
+
+/* ============================================
+   LAB 8 SECURITY: PROFILE SECURITY DASHBOARD
+   ============================================ */
+
+.security-dashboard {
+  margin: 28px 0;
+  padding: 24px;
+  background: linear-gradient(135deg,
+    rgba(239, 107, 86, 0.04) 0%,
+    rgba(59, 178, 115, 0.04) 100%);
+  border: 1px solid rgba(239, 107, 86, 0.12);
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+}
+
+.security-dashboard-title {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0b1220;
+}
+
+.security-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .security-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.security-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.security-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.security-card-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.security-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.security-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.security-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b1220;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.security-value.sec-ok   { color: #059669; }
+.security-value.sec-warn { color: #d97706; }
+
+/* ============================================
+   PRODUCTION: AUTH PAGES (Login / SignUp)
+   ============================================ */
+
+.auth-page {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.auth-card {
+  background: rgba(255, 252, 250, 0.96);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid rgba(239, 107, 86, 0.14);
+  border-radius: 24px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow:
+    0 40px 100px rgba(0, 0, 0, 0.14),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  animation: formModalSlideIn 0.3s cubic-bezier(0.22, 0.9, 0.32, 1.08) both;
+}
+
+.auth-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-brand-icon {
+  font-size: 42px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.auth-title {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0b1220;
+}
+
+.auth-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auth-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid rgba(15, 23, 42, 0.10);
+  border-radius: 12px;
+  font-size: 15px;
+  background: #fff;
+  color: #0b1220;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.auth-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(239, 107, 86, 0.12);
+}
+
+.auth-field input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.field-hint {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.auth-error {
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  padding: 10px 14px;
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.14);
+  border-radius: 10px;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 14px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-footer {
+  text-align: center;
+  margin: 20px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.auth-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+/* Demo banner on login page */
+.demo-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border: 1px dashed rgba(251, 146, 60, 0.4);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #92400e;
+  text-align: center;
+}
+
+.demo-quick-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Success card (email confirmation) */
+.auth-success-card {
+  text-align: center;
+}
+
+/* ============================================
+   NAVBAR: User display + DEMO chip
+   ============================================ */
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-username {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+@media (max-width: 640px) {
+  .nav-username { display: none; }
+}
+
+.demo-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  color: #78350f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ============================================
+   MFA ENROLL SECTION (Profile page)
+   ============================================ */
+
+.mfa-enroll-section {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(239, 107, 86, 0.12);
+  border-radius: 16px;
+}
+
+.mfa-enroll-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0b1220;
+}
+
+.mfa-enroll-desc {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.mfa-enrolled-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mfa-unenroll-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.mfa-enroll-qr-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mfa-qr-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.mfa-qr-img {
+  border-radius: 8px;
+}
+
+.mfa-secret-hint {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin: 0;
+}
+
+.mfa-secret-hint code {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  background: rgba(15, 23, 42, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.mfa-enroll-verify {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mfa-code-input {
+  padding: 12px 16px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-align: center;
+  border: 2px solid rgba(15, 23, 42, 0.12);
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.mfa-code-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(239, 107, 86, 0.12);
+}

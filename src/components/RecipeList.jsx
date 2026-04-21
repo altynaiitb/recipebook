@@ -1,12 +1,5 @@
 import React, { useMemo } from 'react'
 
-// ============================================
-// LAB 7 Task 1: Render Props Pattern
-// RecipeList is a data/logic wrapper that manages
-// filtering and sorting, then calls children(processedRecipes)
-// so the parent controls how items are rendered.
-// ============================================
-
 export default function RecipeList({
   recipes,
   sortBy = 'alpha',
@@ -14,13 +7,11 @@ export default function RecipeList({
   showFavorites,
   children
 }) {
-  // Filter by category (if filterCategory provided)
   const filtered = useMemo(() => {
     if (!filterCategory || filterCategory === 'All') return recipes
     return recipes.filter(r => r.category === filterCategory)
   }, [recipes, filterCategory])
 
-  // Sort the filtered results
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       if (sortBy === 'alpha') return (a.title || '').localeCompare(b.title || '')
@@ -29,7 +20,6 @@ export default function RecipeList({
     })
   }, [filtered, sortBy])
 
-  // Empty state
   if (sorted.length === 0) {
     const message = showFavorites
       ? "You haven't added any favorites yet!"

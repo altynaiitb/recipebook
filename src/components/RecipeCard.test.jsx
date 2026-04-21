@@ -7,12 +7,6 @@ import RecipeCard from './RecipeCard'
 import { RecipeProvider } from '../context/RecipeContext'
 import { FavoritesProvider } from '../context/FavoritesContext'
 
-// ============================================
-// LAB 7 Task 8: Compound Components Test
-// Verifies that sub-components render correctly and
-// clicking buttons updates shared state via local context.
-// ============================================
-
 const mockRecipe = {
   id: 1,
   title: 'Test Pizza',
@@ -41,7 +35,6 @@ describe('RecipeCard — Compound Components (Task 8)', () => {
     renderWithProviders(<RecipeCard recipe={mockRecipe} onOpen={onOpen} />)
 
     expect(await screen.findByText('Test Pizza')).toBeInTheDocument()
-    // 4 rating stars
     const stars = screen.getAllByText('★')
     expect(stars).toHaveLength(4)
   })
@@ -60,15 +53,12 @@ describe('RecipeCard — Compound Components (Task 8)', () => {
     const onOpen = vi.fn()
     renderWithProviders(<RecipeCard recipe={mockRecipe} onOpen={onOpen} />)
 
-    // Wait for the button to appear first via Suspense 
     const toggleBtn = await screen.findByText('Show Details')
     fireEvent.click(toggleBtn)
 
-    // Description should now be visible
     expect(screen.getByText('A delicious test pizza.')).toBeInTheDocument()
     expect(screen.getByText('Hide Details')).toBeInTheDocument()
 
-    // Click "Hide Details" again
     fireEvent.click(screen.getByText('Hide Details'))
     expect(screen.queryByText('A delicious test pizza.')).not.toBeInTheDocument()
   })
@@ -80,11 +70,9 @@ describe('RecipeCard — Compound Components (Task 8)', () => {
     const heartBtn = await screen.findByTitle('Add to favorites')
     expect(heartBtn).toHaveTextContent('♡')
 
-    // Click to favorite
     fireEvent.click(heartBtn)
     expect(screen.getByTitle('Remove from favorites')).toHaveTextContent('♥')
 
-    // Click to unfavorite
     fireEvent.click(screen.getByTitle('Remove from favorites'))
     expect(screen.getByTitle('Add to favorites')).toHaveTextContent('♡')
   })
@@ -110,7 +98,6 @@ describe('RecipeCard — Compound Components (Task 8)', () => {
     const onOpen = vi.fn()
     renderWithProviders(<RecipeCard recipe={mockRecipe} onOpen={onOpen} compact />)
 
-    // Wait for header to ensure component has loaded
     await screen.findByText('Test Pizza')
 
     expect(screen.queryByText('Delete')).not.toBeInTheDocument()

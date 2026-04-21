@@ -1,31 +1,32 @@
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
 import { useRecipes, TAGS } from '../context/RecipeContext'
 import { useFavorites } from '../context/FavoritesContext'
 import { useFilter }    from '../hooks/useFilter'
 import { useModal }     from '../hooks/useModal'
-import RecipeForm  from '../components/RecipeForm'
-import RecipeList  from '../components/RecipeList'
-import RecipeCard  from '../components/RecipeCard'
-import Filters     from '../components/Filters'
+import RecipeForm   from '../components/RecipeForm'
+import RecipeList   from '../components/RecipeList'
+import RecipeCard   from '../components/RecipeCard'
+import Filters      from '../components/Filters'
 import CookingTimer from '../components/CookingTimer'
-import Modal       from '../components/Modal'
+import Modal        from '../components/Modal'
+import FormModal    from '../components/FormModal'
 import ConfirmModal from '../components/ConfirmModal'
-import withAuth    from '../components/withAuth'
+import withAuth     from '../components/withAuth'
 
 // ============================================
-// LAB 7 REQUIREMENTS:
-// Task 1: RecipeList uses render-props (children as function)
-// Task 2: RecipeForm wrapped with withAuth HOC
+// LAB 8 REQUIREMENTS:
+// - Add Recipe / Edit Recipe opened via useModal in FormModal
+// - ProtectedRecipeForm still wrapped with withAuth HOC
+// - editingRecipe change auto-opens the form modal
 // ============================================
 
-// Task 2: Wrap RecipeForm with auth guard
 const ProtectedRecipeForm = withAuth(RecipeForm)
 
 export default function RecipesPage() {
-  const { recipes, isLoading, stats, deleteRecipe } = useRecipes()
+  const { recipes, isLoading, stats, deleteRecipe, editingRecipe, setEditingRecipe } = useRecipes()
   const { favoritesCount, favoriteIds } = useFavorites()
 
-  const [sortBy, setSortBy]               = useState('alpha')
+  const [sortBy,        setSortBy]        = useState('alpha')
   const [showFavorites, setShowFavorites] = useState(false)
 
   // ── useFilter — custom filter hook ──
@@ -40,26 +41,37 @@ export default function RecipesPage() {
     tagsField:     'tags'
   })
 
-  // Favorites filter (separate context, applied on top)
+  // Favorites filter applied on top
   const afterFavoriteFilter = useMemo(() => {
     return showFavorites
       ? filteredRecipes.filter(r => favoriteIds.has(r.id))
       : filteredRecipes
   }, [filteredRecipes, showFavorites, favoriteIds])
 
-  // ── Modals ──
+  // ── Modals ──────────────────────────────────────────────────────────────
   const viewModal   = useModal()
   const deleteModal = useModal()
+  const formModal   = useModal()   // LAB 8: Add/Edit form modal
 
-  const openView    = useCallback((recipe) => viewModal.open(recipe), [viewModal])
-  const closeView   = useCallback(() => viewModal.close(), [viewModal])
+  // Auto-open form modal when a recipe is set for editing (from RecipeCard Edit btn)
+  useEffect(() => {
+    if (editingRecipe) {
+      formModal.open()
+    }
+  }, [editingRecipe])               // intentionally omit formModal to avoid loop
+
+  const handleFormModalClose = useCallback(() => {
+    formModal.close()
+    setEditingRecipe(null)
+  }, [formModal, setEditingRecipe])
+
+  const openView  = useCallback((recipe) => viewModal.open(recipe),    [viewModal])
+  const closeView = useCallback(() => viewModal.close(),               [viewModal])
 
   const requestDelete = useCallback((recipe) => deleteModal.open(recipe), [deleteModal])
 
   const confirmDelete = useCallback(() => {
-    if (deleteModal.data) {
-      deleteRecipe(deleteModal.data.id)
-    }
+    if (deleteModal.data) deleteRecipe(deleteModal.data.id)
     deleteModal.close()
   }, [deleteModal, deleteRecipe])
 
@@ -71,6 +83,11 @@ export default function RecipesPage() {
       : [...current, tag]
     updateFilter('tags', next)
   }, [filters.tags, updateFilter])
+
+  // Derive modal title
+  const formModalTitle = editingRecipe
+    ? `✏️ Edit: ${editingRecipe.title}`
+    : '➕ Add New Recipe'
 
   return (
     <div className="page recipes-page">
@@ -102,8 +119,15 @@ export default function RecipesPage() {
 
       <main className="recipes-layout">
         <section className="left">
-          {/* Task 2: Protected with withAuth */}
-          <ProtectedRecipeForm />
+          {/* LAB 8: Add Recipe button opens FormModal */}
+          <button
+            id="add-recipe-btn"
+            className="btn primary add-recipe-btn"
+            onClick={() => { setEditingRecipe(null); formModal.open() }}
+          >
+            ➕ Add New Recipe
+          </button>
+
           <CookingTimer />
           <Filters
             search={filters.search}
@@ -124,7 +148,6 @@ export default function RecipesPage() {
               <div className="loading-text">Loading recipes…</div>
             </div>
           ) : (
-            /* Task 1: Render Props — children as a function */
             <RecipeList
               recipes={afterFavoriteFilter}
               sortBy={sortBy}
@@ -145,7 +168,16 @@ export default function RecipesPage() {
         </section>
       </main>
 
-      {/* View modal (Lazy loaded content) */}
+      {/* LAB 8: Add/Edit Recipe Form Modal */}
+      <FormModal
+        isOpen={formModal.isOpen}
+        onClose={handleFormModalClose}
+        title={formModalTitle}
+      >
+        <ProtectedRecipeForm onClose={handleFormModalClose} />
+      </FormModal>
+
+      {/* View recipe modal */}
       {viewModal.isOpen && viewModal.data && (
         <Modal recipe={viewModal.data} onClose={closeView} />
       )}

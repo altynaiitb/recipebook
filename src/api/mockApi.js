@@ -123,3 +123,16 @@ export async function apiDeleteRecipe(id) {
 export function resetMockStore() {
   saveStore(DEFAULT_DATA)
 }
+
+/**
+ * POST /auth/mfa/verify — проверка 6-значного TOTP кода
+ * LAB 8 SECURITY: Mock MFA verification.
+ * Demo: '123456' is always valid; any other code fails.
+ */
+export async function apiVerifyMFA(code) {
+  await delay(700)
+  if (String(code) === '123456') {
+    return { success: true, token: 'mock-totp-token-' + Date.now() }
+  }
+  return { success: false, message: 'Invalid verification code. Please try again.' }
+}

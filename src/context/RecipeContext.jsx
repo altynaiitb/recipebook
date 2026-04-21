@@ -1,208 +1,215 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { apiGetRecipes, apiAddRecipe, apiUpdateRecipe, apiDeleteRecipe } from '../api/mockApi'
-
-// ============================================
-// LAB 6 REQUIREMENTS SATISFIED IN THIS FILE:
-// Задача 7: addRecipe / updateRecipe — обращаются к mock API
-// Задача 8: deleteRecipe — обращается к mock API,
-//           после успешного ответа обновляет глобальное состояние
-//
-// (Lab 5 требования сохранены: useCallback, useMemo, Timer)
-// ============================================
+import {
+  apiGetRecipes, apiAddRecipe, apiUpdateRecipe, apiDeleteRecipe,
+  apiSignIn, apiSignUp, apiSignOut, apiGetSession, apiOnAuthChange,
+  apiVerifyMFA, apiChallengeMFA
+} from '../api/supabaseApi'
+import { DEMO_MODE } from '../lib/supabase'
 
 const RecipeContext = createContext(null)
 
 const ALARM_SOUND_PATH = '/alarm.mp3'
-
 export const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert']
 export const TAGS       = ['Vegan', 'Fast Food', 'Spicy', 'Traditional', 'Healthy', 'Meat', 'Quick']
+export const TIMER_STATE = { IDLE: 'idle', RUNNING: 'running', PAUSED: 'paused', FINISHED: 'finished' }
+export const AUTH_STAGE  = { UNAUTHENTICATED: 'unauthenticated', PENDING_MFA: 'pending_mfa', AUTHENTICATED: 'authenticated' }
 
-export const TIMER_STATE = {
-  IDLE:     'idle',
-  RUNNING:  'running',
-  PAUSED:   'paused',
-  FINISHED: 'finished'
-}
+let _notifId = 0
+function makeNotif(msg, type = 'success') { return { id: ++_notifId, message: msg, type } }
 
 export function RecipeProvider({ children }) {
-  const [recipes, setRecipes]         = useState([])
-  const [isLoading, setIsLoading]     = useState(true)
-  const [apiError, setApiError]       = useState(null)
+  // ── Recipes ───────────────────────────────────────────────────────
+  const [recipes,   setRecipes]   = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [apiError,  setApiError]  = useState(null)
 
-  // LAB 7 Task 2: Authentication state for withAuth HOC
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
-  const login  = useCallback(() => setIsAuthenticated(true), [])
-  const logout = useCallback(() => setIsAuthenticated(false), [])
+  // ── Auth ──────────────────────────────────────────────────────────
+  // In DEMO_MODE: starts authenticated (as before)
+  // In PRODUCTION: starts unauthenticated, session restored from JWT
+  const [authStage,   setAuthStage]   = useState(DEMO_MODE ? AUTH_STAGE.AUTHENTICATED : AUTH_STAGE.UNAUTHENTICATED)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [lastLogin,   setLastLogin]   = useState(DEMO_MODE ? new Date() : null)
+  const [mfaFactorId, setMfaFactorId] = useState(null) // stored during pending_mfa
 
-  // Edit mode (Lab 5 Задача 3)
-  const [editingRecipe, setEditingRecipe] = useState(null)
+  const isAuthenticated      = authStage === AUTH_STAGE.AUTHENTICATED
+  const isPendingMFA         = authStage === AUTH_STAGE.PENDING_MFA
+  const isFullyAuthenticated = isAuthenticated
 
-  // Global Timer state
-  const [timerSeconds,       setTimerSeconds]       = useState(0)
-  const [timerState,         setTimerState]          = useState(TIMER_STATE.IDLE)
-  const [timerInitialMinutes, setTimerInitialMinutes] = useState(5)
-  const [isAlarmPlaying,     setIsAlarmPlaying]      = useState(false)
+  // ── Notifications ─────────────────────────────────────────────────
+  const [notifications, setNotifications] = useState([])
+  const notifTimers = useRef(new Map())
 
-  const deleteTimersRef = useRef(new Map())
-  const alarmAudioRef   = useRef(null)
+  const dismissNotification = useCallback((id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id))
+    const t = notifTimers.current.get(id)
+    if (t) { clearTimeout(t); notifTimers.current.delete(id) }
+  }, [])
 
-  // ── Alarm sound ────────────────────────────────────────────────────────
-  useEffect(() => {
-    try {
-      const audio = new Audio(ALARM_SOUND_PATH)
-      audio.loop = true
-      audio.preload = 'auto'
-      audio.addEventListener('error', () => { alarmAudioRef.current = null })
-      audio.addEventListener('canplaythrough', () => { alarmAudioRef.current = audio })
-      audio.load()
-      alarmAudioRef.current = audio
-    } catch {
-      alarmAudioRef.current = null
-    }
-    return () => {
-      if (alarmAudioRef.current) {
-        alarmAudioRef.current.pause()
-        alarmAudioRef.current = null
-      }
-    }
+  const addNotification = useCallback((message, type = 'success') => {
+    const n = makeNotif(message, type)
+    setNotifications(prev => [...prev, n])
+    const t = setTimeout(() => {
+      setNotifications(prev => prev.filter(x => x.id !== n.id))
+      notifTimers.current.delete(n.id)
+    }, 3500)
+    notifTimers.current.set(n.id, t)
   }, [])
 
   useEffect(() => {
-    if (timerState === TIMER_STATE.FINISHED) playAlarm()
-    else stopAlarm()
-  }, [timerState])
+    const m = notifTimers.current
+    return () => { m.forEach(clearTimeout); m.clear() }
+  }, [])
 
-  // ── LAB 6 Задача 5+6: Загрузка рецептов через mock API ────────────────
+  // ── Restore JWT session on mount (production only) ────────────────
+  useEffect(() => {
+    if (DEMO_MODE) return
+    apiGetSession().then(session => {
+      if (session?.user) {
+        setCurrentUser(session.user)
+        setLastLogin(new Date(session.user.last_sign_in_at ?? Date.now()))
+        setAuthStage(AUTH_STAGE.AUTHENTICATED)
+      }
+    })
+
+    const unsub = apiOnAuthChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setCurrentUser(session.user)
+        setLastLogin(new Date(session.user.last_sign_in_at ?? Date.now()))
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null)
+        setLastLogin(null)
+        setAuthStage(AUTH_STAGE.UNAUTHENTICATED)
+      }
+    })
+    return unsub
+  }, [])
+
+  // ── Load recipes ──────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false
-    setIsLoading(true)
-    setApiError(null)
-
+    setIsLoading(true); setApiError(null)
     apiGetRecipes()
-      .then(data => {
-        if (!cancelled) setRecipes(data)
-      })
-      .catch(err => {
-        if (!cancelled) setApiError(err.message || 'Failed to load recipes')
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false)
-      })
-
+      .then(data   => { if (!cancelled) setRecipes(data) })
+      .catch(err   => { if (!cancelled) { setApiError(err.message); addNotification(`⚠️ ${err.message}`, 'error') } })
+      .finally(()  => { if (!cancelled) setIsLoading(false) })
     return () => { cancelled = true }
+  }, [addNotification])
+
+  // ── Auth actions ──────────────────────────────────────────────────
+  const signIn = useCallback(async (email, password) => {
+    try {
+      const result = await apiSignIn(email, password)
+      setCurrentUser(result.user)
+      if (result.needsMFA) {
+        setMfaFactorId(result.factorId)
+        setAuthStage(AUTH_STAGE.PENDING_MFA)
+      } else {
+        setLastLogin(new Date())
+        setAuthStage(AUTH_STAGE.AUTHENTICATED)
+      }
+    } catch (err) {
+      addNotification(`❌ Sign-in failed: ${err.message}`, 'error')
+      throw err
+    }
+  }, [addNotification])
+
+  const signUp = useCallback(async (email, password, username) => {
+    try {
+      await apiSignUp(email, password, username)
+      addNotification('✅ Account created! Check your email to confirm.', 'success')
+    } catch (err) {
+      addNotification(`❌ Sign-up failed: ${err.message}`, 'error')
+      throw err
+    }
+  }, [addNotification])
+
+  const logout = useCallback(async () => {
+    await apiSignOut().catch(() => {})
+    setCurrentUser(null); setLastLogin(null); setMfaFactorId(null)
+    setAuthStage(AUTH_STAGE.UNAUTHENTICATED)
   }, [])
+
+  // Legacy demo compat: login() = go to pending_mfa state
+  const login = useCallback(() => setAuthStage(AUTH_STAGE.PENDING_MFA), [])
+
+  const completeMFA = useCallback(() => {
+    setAuthStage(AUTH_STAGE.AUTHENTICATED)
+    setLastLogin(new Date())
+  }, [])
+
+  // ── Editing ───────────────────────────────────────────────────────
+  const [editingRecipe, setEditingRecipe] = useState(null)
+  const handleEdit = useCallback(r => setEditingRecipe(r), [])
+
+  // ── Timer ─────────────────────────────────────────────────────────
+  const [timerSeconds,        setTimerSeconds]       = useState(0)
+  const [timerState,          setTimerState]          = useState(TIMER_STATE.IDLE)
+  const [timerInitialMinutes, setTimerInitialMinutes] = useState(5)
+  const [isAlarmPlaying,      setIsAlarmPlaying]      = useState(false)
+  const alarmRef   = useRef(null)
+  const delTimers  = useRef(new Map())
 
   useEffect(() => {
-    const timers = deleteTimersRef.current
-    return () => { timers.forEach(id => clearTimeout(id)); timers.clear() }
+    try {
+      const a = new Audio(ALARM_SOUND_PATH); a.loop = true; a.preload = 'auto'
+      a.addEventListener('error', () => { alarmRef.current = null })
+      a.addEventListener('canplaythrough', () => { alarmRef.current = a })
+      a.load(); alarmRef.current = a
+    } catch { alarmRef.current = null }
+    return () => { if (alarmRef.current) { alarmRef.current.pause(); alarmRef.current = null } }
   }, [])
 
-  // Global Timer interval
+  useEffect(() => { if (timerState === TIMER_STATE.FINISHED) playAlarm(); else stopAlarm() }, [timerState])
+  useEffect(() => {
+    const t = delTimers.current
+    return () => { t.forEach(clearTimeout); t.clear() }
+  }, [])
   useEffect(() => {
     if (timerState !== TIMER_STATE.RUNNING) return
-    const id = setInterval(() => {
-      setTimerSeconds(prev => {
-        if (prev <= 1) { setTimerState(TIMER_STATE.FINISHED); return 0 }
-        return prev - 1
-      })
-    }, 1000)
+    const id = setInterval(() => setTimerSeconds(p => { if (p <= 1) { setTimerState(TIMER_STATE.FINISHED); return 0 } return p - 1 }), 1000)
     return () => clearInterval(id)
   }, [timerState])
 
-  // ── Alarm helpers ──────────────────────────────────────────────────────
-  function playAlarm() {
-    const audio = alarmAudioRef.current
-    if (!audio) return
-    try {
-      audio.currentTime = 0
-      const p = audio.play()
-      if (p) p.then(() => setIsAlarmPlaying(true)).catch(() => setIsAlarmPlaying(false))
-    } catch { }
-  }
+  function playAlarm() { const a = alarmRef.current; if (!a) return; try { a.currentTime = 0; const p = a.play(); if (p) p.then(() => setIsAlarmPlaying(true)).catch(() => {}) } catch {} }
+  function stopAlarm()  { const a = alarmRef.current; if (a && !a.paused) { try { a.pause(); a.currentTime = 0 } catch {} } setIsAlarmPlaying(false) }
 
-  function stopAlarm() {
-    const audio = alarmAudioRef.current
-    if (audio && !audio.paused) {
-      try { audio.pause(); audio.currentTime = 0 } catch { }
-    }
-    setIsAlarmPlaying(false)
-  }
-
-  // ── Timer controls ─────────────────────────────────────────────────────
-  const startGlobalTimer = useCallback((minutes) => {
-    const mins = Math.max(1, Math.min(120, minutes || timerInitialMinutes))
-    setTimerInitialMinutes(mins)
-    setTimerSeconds(mins * 60)
-    setTimerState(TIMER_STATE.RUNNING)
-  }, [timerInitialMinutes])
-
-  const pauseGlobalTimer = useCallback(() => {
-    if (timerState === TIMER_STATE.RUNNING) setTimerState(TIMER_STATE.PAUSED)
-  }, [timerState])
-
-  const resumeGlobalTimer = useCallback(() => {
-    if (timerState === TIMER_STATE.PAUSED && timerSeconds > 0) setTimerState(TIMER_STATE.RUNNING)
-  }, [timerState, timerSeconds])
-
-  const resetGlobalTimer = useCallback(() => {
-    stopAlarm()
-    setTimerState(TIMER_STATE.IDLE)
-    setTimerSeconds(0)
-  }, [])
-
-  const setTimerInputMinutes = useCallback((minutes) => {
-    setTimerInitialMinutes(Math.max(1, Math.min(120, minutes)))
-  }, [])
-
+  const startGlobalTimer  = useCallback(m => { const mins = Math.max(1, Math.min(120, m || timerInitialMinutes)); setTimerInitialMinutes(mins); setTimerSeconds(mins * 60); setTimerState(TIMER_STATE.RUNNING) }, [timerInitialMinutes])
+  const pauseGlobalTimer  = useCallback(() => { if (timerState === TIMER_STATE.RUNNING) setTimerState(TIMER_STATE.PAUSED) }, [timerState])
+  const resumeGlobalTimer = useCallback(() => { if (timerState === TIMER_STATE.PAUSED && timerSeconds > 0) setTimerState(TIMER_STATE.RUNNING) }, [timerState, timerSeconds])
+  const resetGlobalTimer  = useCallback(() => { stopAlarm(); setTimerState(TIMER_STATE.IDLE); setTimerSeconds(0) }, [])
+  const setTimerInputMinutes = useCallback(m => setTimerInitialMinutes(Math.max(1, Math.min(120, m))), [])
   const stopAlarmCb = useCallback(() => stopAlarm(), [])
 
-  // ── LAB 6 Задача 7: addRecipe через API ────────────────────────────────
-  const addRecipe = useCallback(async (r) => {
+  // ── CRUD ──────────────────────────────────────────────────────────
+  const addRecipe = useCallback(async r => {
     try {
       const created = await apiAddRecipe({ ...r, tags: r.tags || [] })
       setRecipes(prev => [created, ...prev])
-    } catch (err) {
-      console.error('addRecipe error:', err)
-    }
-  }, [])
+      addNotification(`✅ "${created.title}" added!`, 'success')
+    } catch (err) { console.error('addRecipe:', err); addNotification(`❌ ${err.message}`, 'error') }
+  }, [addNotification])
 
-  // ── LAB 6 Задача 7: updateRecipe через API ─────────────────────────────
-  const updateRecipe = useCallback(async (updated) => {
+  const updateRecipe = useCallback(async updated => {
     try {
       const saved = await apiUpdateRecipe(updated.id, updated)
       setRecipes(prev => prev.map(r => r.id === saved.id ? saved : r))
       setEditingRecipe(null)
-    } catch (err) {
-      console.error('updateRecipe error:', err)
-    }
-  }, [])
+      addNotification(`✏️ "${saved.title}" updated!`, 'success')
+    } catch (err) { console.error('updateRecipe:', err); addNotification(`❌ ${err.message}`, 'error') }
+  }, [addNotification])
 
-  // ── LAB 6 Задача 8: deleteRecipe через API ────────────────────────────
-  const deleteRecipe = useCallback(async (id) => {
-    // Оптимистичное обновление: сначала показываем анимацию удаления
+  const deleteRecipe = useCallback(async id => {
     setRecipes(prev => prev.map(r => r.id === id ? { ...r, removing: true } : r))
-
-    const timerId = setTimeout(async () => {
+    const t = setTimeout(async () => {
       try {
         await apiDeleteRecipe(id)
-        // После успешного ответа от API — удаляем из состояния
-        setRecipes(prev => prev.filter(r => r.id !== id))
-      } catch (err) {
-        // При ошибке — откатываем анимацию
-        console.error('deleteRecipe error:', err)
-        setRecipes(prev => prev.map(r => r.id === id ? { ...r, removing: false } : r))
-      }
-      deleteTimersRef.current.delete(id)
+        setRecipes(prev => { const d = prev.find(r => r.id === id); if (d) addNotification(`🗑️ "${d.title}" deleted.`, 'success'); return prev.filter(r => r.id !== id) })
+      } catch (err) { console.error('deleteRecipe:', err); setRecipes(prev => prev.map(r => r.id === id ? { ...r, removing: false } : r)); addNotification(`❌ ${err.message}`, 'error') }
+      delTimers.current.delete(id)
     }, 320)
+    delTimers.current.set(id, t)
+  }, [addNotification])
 
-    deleteTimersRef.current.set(id, timerId)
-  }, [])
-
-  const handleEdit = useCallback((recipe) => {
-    setEditingRecipe(recipe)
-  }, [])
-
-  // ── useMemo: вычисляемая статистика (Lab 5 Задача 8) ──────────────────
   const stats = useMemo(() => ({
     total: recipes.length,
     byCategory: {
@@ -211,54 +218,29 @@ export function RecipeProvider({ children }) {
       dinner:    recipes.filter(r => r.category === 'Dinner').length
     },
     averageRating: recipes.length > 0
-      ? (recipes.reduce((sum, r) => sum + (r.rating || 0), 0) / recipes.length).toFixed(1)
-      : 0
+      ? (recipes.reduce((s, r) => s + (r.rating || 0), 0) / recipes.length).toFixed(1) : 0
   }), [recipes])
 
   const value = {
-    // Recipe state & actions
-    recipes,
-    isLoading,
-    apiError,
-    addRecipe,
-    updateRecipe,
-    deleteRecipe,
-    handleEdit,
-    editingRecipe,
-    setEditingRecipe,
-    stats,
-
-    // LAB 7 Task 2: Auth state
-    isAuthenticated,
-    login,
-    logout,
-
-    // Timer state
-    timerSeconds,
-    timerState,
-    timerInitialMinutes,
-    isTimerRunning:  timerState === TIMER_STATE.RUNNING,
-    isTimerPaused:   timerState === TIMER_STATE.PAUSED,
-    isTimerFinished: timerState === TIMER_STATE.FINISHED,
-    isTimerIdle:     timerState === TIMER_STATE.IDLE,
-    isAlarmPlaying,
-
-    // Timer actions
-    startGlobalTimer,
-    pauseGlobalTimer,
-    resumeGlobalTimer,
-    resetGlobalTimer,
-    setTimerInputMinutes,
-    stopAlarm: stopAlarmCb,
-
-    TIMER_STATE
+    recipes, isLoading, apiError, addRecipe, updateRecipe, deleteRecipe,
+    handleEdit, editingRecipe, setEditingRecipe, stats,
+    // Auth
+    isAuthenticated, isFullyAuthenticated, isPendingMFA, currentUser, lastLogin, mfaFactorId,
+    login, logout, signIn, signUp, completeMFA,
+    // Notifications
+    notifications, addNotification, dismissNotification,
+    // Timer
+    timerSeconds, timerState, timerInitialMinutes, isAlarmPlaying,
+    isTimerRunning: timerState === TIMER_STATE.RUNNING,
+    isTimerPaused:  timerState === TIMER_STATE.PAUSED,
+    isTimerFinished:timerState === TIMER_STATE.FINISHED,
+    isTimerIdle:    timerState === TIMER_STATE.IDLE,
+    startGlobalTimer, pauseGlobalTimer, resumeGlobalTimer,
+    resetGlobalTimer, setTimerInputMinutes, stopAlarm: stopAlarmCb,
+    TIMER_STATE, DEMO_MODE
   }
 
-  return (
-    <RecipeContext.Provider value={value}>
-      {children}
-    </RecipeContext.Provider>
-  )
+  return <RecipeContext.Provider value={value}>{children}</RecipeContext.Provider>
 }
 
 export function useRecipes() {

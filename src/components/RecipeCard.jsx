@@ -2,16 +2,6 @@ import React, { useState, useCallback, createContext, useContext, Suspense, lazy
 import { useRecipes } from '../context/RecipeContext'
 import { useFavorites } from '../context/FavoritesContext'
 
-// ============================================
-// LAB 7 Task 3: Compound Component Pattern
-// RecipeCard is split into Header, Body, Footer sub-components
-// sharing state via a local RecipeCardContext.
-//
-// LAB 7 Task 5: Lazy Loading
-// Sub-components are lazy-loaded via React.lazy + Suspense.
-// ============================================
-
-// ── Local Context ───────────────────────────────────────────
 const RecipeCardContext = createContext(null)
 
 function useCardContext() {
@@ -20,7 +10,6 @@ function useCardContext() {
   return ctx
 }
 
-// ── Sub-component: Header ────────────────────────────────────
 function RecipeCardHeader() {
   const { recipe } = useCardContext()
   return (
@@ -35,7 +24,6 @@ function RecipeCardHeader() {
   )
 }
 
-// ── Sub-component: Body ──────────────────────────────────────
 function RecipeCardBody() {
   const { recipe, showDetails, toggleDetails } = useCardContext()
   return (
@@ -63,7 +51,6 @@ function RecipeCardBody() {
   )
 }
 
-// ── Sub-component: Footer ────────────────────────────────────
 function RecipeCardFooter() {
   const { recipe, liked, toggleFav, onOpen, onDelete, compact, handleEdit } = useCardContext()
   return (
@@ -95,13 +82,10 @@ function RecipeCardFooter() {
   )
 }
 
-// ── Lazy-wrapped sub-components ──────────────────────────────
-// We wrap each in a lazy factory for the Suspense boundary
 const LazyHeader = lazy(() => Promise.resolve({ default: RecipeCardHeader }))
 const LazyBody = lazy(() => Promise.resolve({ default: RecipeCardBody }))
 const LazyFooter = lazy(() => Promise.resolve({ default: RecipeCardFooter }))
 
-// ── Main Compound Component ─────────────────────────────────
 const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, onDelete, compact = false }) {
   const { deleteRecipe, handleEdit } = useRecipes()
   const { isFavorite, toggleFavorite } = useFavorites()
@@ -148,7 +132,6 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, onDelete, co
   )
 })
 
-// Attach sub-components as static properties (Compound Component API)
 RecipeCard.Header = RecipeCardHeader
 RecipeCard.Body = RecipeCardBody
 RecipeCard.Footer = RecipeCardFooter

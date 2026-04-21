@@ -7,12 +7,6 @@ import '@testing-library/jest-dom'
 import RecipeForm from './RecipeForm'
 import { RecipeProvider } from '../context/RecipeContext'
 
-// ============================================
-// LAB 7 Task 9: Hybrid Form Test
-// Tests both controlled (title, category) and uncontrolled
-// (ingredients, description) fields, plus validation.
-// ============================================
-
 const mockAddRecipe    = vi.fn()
 const mockUpdateRecipe = vi.fn()
 const mockSetEditing   = vi.fn()
@@ -53,8 +47,6 @@ describe('RecipeForm — Hybrid Form (Task 9)', () => {
     }
   })
 
-  // ── Controlled field tests ──
-
   it('renders title input (controlled) and reflects changes', async () => {
     const user = userEvent.setup()
     renderForm()
@@ -73,8 +65,6 @@ describe('RecipeForm — Hybrid Form (Task 9)', () => {
     expect(select.value).toBe('Breakfast')
   })
 
-  // ── Uncontrolled field tests ──
-
   it('renders ingredients textarea (uncontrolled via ref)', () => {
     renderForm()
     const ingredientsArea = screen.getByTestId('input-ingredients')
@@ -88,8 +78,6 @@ describe('RecipeForm — Hybrid Form (Task 9)', () => {
     expect(descArea).toBeInTheDocument()
     expect(descArea.tagName).toBe('TEXTAREA')
   })
-
-  // ── Validation tests ──
 
   it('shows validation error for title < 3 chars on blur', async () => {
     const user = userEvent.setup()
@@ -139,17 +127,13 @@ describe('RecipeForm — Hybrid Form (Task 9)', () => {
     expect(screen.getByRole('button', { name: /add recipe/i })).toBeDisabled()
   })
 
-  // ── Submit test ──
-
   it('calls addRecipe with both controlled and uncontrolled values on submit', async () => {
     const user = userEvent.setup()
     renderForm()
 
-    // Fill controlled fields
     await user.type(screen.getByTestId('input-title'), 'Pizza')
     await user.selectOptions(screen.getByTestId('select-category'), 'Dinner')
 
-    // Fill uncontrolled fields (via fireEvent since they are uncontrolled)
     const ingredientsArea = screen.getByTestId('input-ingredients')
     fireEvent.change(ingredientsArea, { target: { value: 'Dough, Sauce, Cheese' } })
     fireEvent.blur(ingredientsArea)
@@ -158,23 +142,18 @@ describe('RecipeForm — Hybrid Form (Task 9)', () => {
     fireEvent.change(descArea, { target: { value: 'Bake at 250°C for 12 minutes' } })
     fireEvent.blur(descArea)
 
-    // Submit
     const submitBtn = screen.getByRole('button', { name: /add recipe/i })
     await user.click(submitBtn)
 
     await waitFor(() => {
       expect(mockAddRecipe).toHaveBeenCalledTimes(1)
       const arg = mockAddRecipe.mock.calls[0][0]
-      // Controlled values
       expect(arg.title).toBe('Pizza')
       expect(arg.category).toBe('Dinner')
-      // Uncontrolled values
       expect(arg.ingredients).toBe('Dough, Sauce, Cheese')
       expect(arg.description).toBe('Bake at 250°C for 12 minutes')
     })
   })
-
-  // ── Edit mode ──
 
   it('prefills all fields in edit mode and calls updateRecipe', async () => {
     const user = userEvent.setup()
@@ -194,15 +173,12 @@ describe('RecipeForm — Hybrid Form (Task 9)', () => {
 
     renderForm()
 
-    // Controlled fields should be prefilled
     expect(screen.getByTestId('input-title')).toHaveValue('Old Title')
     expect(screen.getByTestId('select-category')).toHaveValue('Lunch')
 
-    // Uncontrolled fields should be prefilled via refs
     expect(screen.getByTestId('input-ingredients')).toHaveValue('Eggs')
     expect(screen.getByTestId('input-description')).toHaveValue('Old instructions')
 
-    // Submit edit
     await user.click(screen.getByRole('button', { name: /save changes/i }))
     await waitFor(() => {
       expect(mockUpdateRecipe).toHaveBeenCalledTimes(1)

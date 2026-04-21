@@ -5,14 +5,6 @@ import '@testing-library/jest-dom'
 
 import withAuth from './withAuth'
 
-// ============================================
-// LAB 7 Task 7: HOC Test
-// Tests two scenarios:
-// 1. isAuthenticated=true  → wrapped component renders
-// 2. isAuthenticated=false → "Access Denied" message shown
-// ============================================
-
-// Mock the context
 let mockIsAuthenticated = true
 
 vi.mock('../context/RecipeContext', () => ({
@@ -21,7 +13,6 @@ vi.mock('../context/RecipeContext', () => ({
   })
 }))
 
-// A simple component to wrap
 function SecretComponent({ message }) {
   return <div data-testid="secret">{message || 'Secret Content'}</div>
 }
