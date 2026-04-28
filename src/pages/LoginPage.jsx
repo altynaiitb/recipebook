@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, Navigate } from 'react-router-dom'
 import { useRecipes } from '../context/RecipeContext'
 import { DEMO_MODE } from '../lib/supabase'
 
@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [loading,  setLoading]  = useState(false)
 
   // Already authenticated → redirect to home
-  if (isAuthenticated) { navigate('/'); return null }
+  if (isAuthenticated) return <Navigate to="/" replace />
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault()
