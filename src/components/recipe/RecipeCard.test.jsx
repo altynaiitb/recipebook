@@ -4,9 +4,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
 import RecipeCard from './RecipeCard'
-import { NotificationProvider } from '../context/NotificationContext'
-import { RecipeProvider } from '../context/RecipeContext'
-import { FavoritesProvider } from '../context/FavoritesContext'
+import { NotificationProvider } from '../../context/NotificationContext'
+import { RecipeProvider } from '../../context/RecipeContext'
+import { FavoritesProvider } from '../../context/FavoritesContext'
 
 const mockRecipe = {
   id: 1,

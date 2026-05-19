@@ -1,9 +1,9 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useRecipes } from '../context/RecipeContext'
-import { useFavorites } from '../context/FavoritesContext'
-import { DEMO_MODE } from '../lib/supabase'
+import { useRecipes } from '../../context/RecipeContext'
+import { useFavorites } from '../../context/FavoritesContext'
+import { DEMO_MODE } from '../../lib/supabase'
 
 export default function NavBar() {
   const { stats, isAuthenticated, isPendingMFA, currentUser, login, logout } = useRecipes()

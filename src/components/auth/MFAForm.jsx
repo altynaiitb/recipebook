@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { useRecipes } from '../context/RecipeContext'
-import { apiVerifyMFA, apiChallengeMFA } from '../api/supabaseApi'
-import { DEMO_MODE } from '../lib/supabase'
+import { useRecipes } from '../../context/RecipeContext'
+import { apiVerifyMFA, apiChallengeMFA } from '../../api/supabaseApi'
+import { DEMO_MODE } from '../../lib/supabase'
 
 export default function MFAForm() {
   const { isPendingMFA, completeMFA, logout, mfaFactorId, currentUser } = useRecipes()

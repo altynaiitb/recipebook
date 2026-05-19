@@ -1,6 +1,6 @@
 import React, { useRef, useLayoutEffect, useEffect, useCallback } from 'react'
-import { useRecipes, CATEGORIES, TAGS } from '../context/RecipeContext'
-import { useForm } from '../hooks/useForm'
+import { useRecipes, CATEGORIES, TAGS } from '../../context/RecipeContext'
+import { useForm } from '../../hooks/useForm'
 
 const INITIAL_VALUES = {
   title:        '',

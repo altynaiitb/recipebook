@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, createContext, useContext } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { useRecipes } from '../context/RecipeContext'
-import { useFavorites } from '../context/FavoritesContext'
+import { useRecipes } from '../../context/RecipeContext'
+import { useFavorites } from '../../context/FavoritesContext'
 
 const RecipeCardContext = createContext(null)
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { useRecipes } from '../context/RecipeContext'
+import { useRecipes } from '../../context/RecipeContext'
 
 export default function ScreenProtection() {
   const { isAuthenticated } = useRecipes()

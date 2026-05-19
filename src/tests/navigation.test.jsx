@@ -9,8 +9,8 @@ import { Routes, Route } from 'react-router-dom'
 import { NotificationProvider } from '../context/NotificationContext'
 import { RecipeProvider }       from '../context/RecipeContext'
 import { FavoritesProvider }    from '../context/FavoritesContext'
-import NavBar from '../components/NavBar'
-import MFAForm from '../components/MFAForm'
+import NavBar from '../components/layout/NavBar'
+import MFAForm from '../components/auth/MFAForm'
 
 vi.mock('../api/mockApi', () => ({
   apiGetRecipes:  vi.fn(() => Promise.resolve([])),

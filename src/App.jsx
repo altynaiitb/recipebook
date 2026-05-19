@@ -1,11 +1,11 @@
 import React, { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
-import NavBar            from './components/NavBar'
-import NotificationToast from './components/NotificationToast'
-import MFAForm           from './components/MFAForm'
-import ScreenProtection  from './components/ScreenProtection'
-import AnimatedPage      from './components/AnimatedPage'
+import NavBar            from './components/layout/NavBar'
+import NotificationToast from './components/ui/NotificationToast'
+import MFAForm           from './components/auth/MFAForm'
+import ScreenProtection  from './components/layout/ScreenProtection'
+import AnimatedPage      from './components/layout/AnimatedPage'
 import { useRecipes }    from './context/RecipeContext'
 
 const HomePage       = lazy(() => import('./pages/HomePage'))

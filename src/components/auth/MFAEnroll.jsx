@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react'
-import { useRecipes } from '../context/RecipeContext'
-import { useNotifications } from '../context/NotificationContext'
-import { apiEnrollMFA, apiChallengeMFA, apiVerifyMFA, apiUnenrollMFA, apiListMFAFactors } from '../api/supabaseApi'
-import { DEMO_MODE } from '../lib/supabase'
+import { useRecipes } from '../../context/RecipeContext'
+import { useNotifications } from '../../context/NotificationContext'
+import { apiEnrollMFA, apiChallengeMFA, apiVerifyMFA, apiUnenrollMFA, apiListMFAFactors } from '../../api/supabaseApi'
+import { DEMO_MODE } from '../../lib/supabase'
 
 export default function MFAEnroll() {
   const { isAuthenticated } = useRecipes()

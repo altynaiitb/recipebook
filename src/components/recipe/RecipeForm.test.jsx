@@ -5,8 +5,8 @@ import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
 
 import RecipeForm from './RecipeForm'
-import { NotificationProvider } from '../context/NotificationContext'
-import { RecipeProvider } from '../context/RecipeContext'
+import { NotificationProvider } from '../../context/NotificationContext'
+import { RecipeProvider } from '../../context/RecipeContext'
 
 const mockAddRecipe    = vi.fn()
 const mockUpdateRecipe = vi.fn()
@@ -20,7 +20,7 @@ let mockContextValue = {
   isAuthenticated: true
 }
 
-vi.mock('../context/RecipeContext', async (importOriginal) => {
+vi.mock('../../context/RecipeContext', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,

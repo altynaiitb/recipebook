@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { useTimer } from '../context/TimerContext'
+import { useTimer } from '../../context/TimerContext'
 
 const CookingTimer = React.memo(function CookingTimer() {
 

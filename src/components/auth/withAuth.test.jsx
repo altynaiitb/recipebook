@@ -7,7 +7,7 @@ import withAuth from './withAuth'
 
 let mockIsAuthenticated = true
 
-vi.mock('../context/RecipeContext', () => ({
+vi.mock('../../context/RecipeContext', () => ({
   useRecipes: () => ({
     isAuthenticated: mockIsAuthenticated
   })

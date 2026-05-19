@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import { useRecipes } from '../context/RecipeContext'
 import { useFavorites } from '../context/FavoritesContext'
 import { DEMO_MODE } from '../lib/supabase'
-import RecipeCard from '../components/RecipeCard'
-import Modal from '../components/Modal'
-import MFAEnroll from '../components/MFAEnroll'
+import RecipeCard from '../components/recipe/RecipeCard'
+import Modal from '../components/ui/Modal'
+import MFAEnroll from '../components/auth/MFAEnroll'
 
 // ============================================
 // LAB 8 SECURITY: ProfilePage — added Security Dashboard

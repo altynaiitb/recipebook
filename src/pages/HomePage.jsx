@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import { useRecipes } from '../context/RecipeContext'
 import { useFavorites } from '../context/FavoritesContext'
-import WindowSize from '../components/WindowSize'
+import WindowSize from '../components/layout/WindowSize'
 
 function AnimatedNumber({ value }) {
   const [display, setDisplay] = useState(0)

@@ -1,5 +1,5 @@
 import React from 'react'
-import { useRecipes } from '../context/RecipeContext'
+import { useRecipes } from '../../context/RecipeContext'
 
 export default function withAuth(WrappedComponent) {
   function AuthGuard(props) {

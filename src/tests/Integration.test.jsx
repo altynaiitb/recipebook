@@ -33,9 +33,9 @@ vi.mock('../lib/supabase', () => ({
 }))
 
 import RecipesPage         from '../pages/RecipesPage'
-import NavBar              from '../components/NavBar'
-import NotificationToast   from '../components/NotificationToast'
-import MFAForm             from '../components/MFAForm'
+import NavBar              from '../components/layout/NavBar'
+import NotificationToast   from '../components/ui/NotificationToast'
+import MFAForm             from '../components/auth/MFAForm'
 
 function renderApp() {
   return render(

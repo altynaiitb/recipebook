@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react'
-import { useNotifications } from '../context/NotificationContext'
+import { useNotifications } from '../../context/NotificationContext'
 
 export default function NotificationToast() {
   const { notifications, dismissNotification } = useNotifications()
