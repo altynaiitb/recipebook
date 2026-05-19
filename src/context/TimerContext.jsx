@@ -131,5 +131,3 @@ export function useTimer() {
   if (!ctx) throw new Error('useTimer must be used within a TimerProvider')
   return ctx
 }
-
-export default TimerContext

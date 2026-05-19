@@ -44,5 +44,3 @@ export function useNotifications() {
   if (!ctx) throw new Error('useNotifications must be used within a NotificationProvider')
   return ctx
 }
-
-export default NotificationContext
