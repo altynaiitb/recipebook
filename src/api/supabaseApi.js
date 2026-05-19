@@ -1,27 +1,8 @@
-/**
- * supabaseApi.js — Production API layer
- *
- * DEMO_MODE (no real Supabase keys):
- *   All functions delegate to mockApi.js (localStorage) so the
- *   app and ALL existing tests continue to work unchanged.
- *
- * PRODUCTION (real VITE_SUPABASE_URL set in .env.local):
- *   All functions call the real Supabase backend with JWT auth,
- *   PostgreSQL rows, and server-side TOTP MFA.
- *
- * RecipeContext imports from this file exclusively.
- */
-
 import { supabase, DEMO_MODE } from '../lib/supabase'
 
-// ── Lazy import of mockApi (only used in DEMO_MODE) ──────────────────────
 async function mock() {
   return import('./mockApi')
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  CRUD — Recipes
-// ════════════════════════════════════════════════════════════════════
 
 export async function apiGetRecipes() {
   if (DEMO_MODE) return (await mock()).apiGetRecipes()
@@ -75,14 +56,6 @@ export async function apiDeleteRecipe(id) {
   return { success: true, id }
 }
 
-// ════════════════════════════════════════════════════════════════════
-//  Auth — Sign Up / Sign In / Sign Out / Session
-// ════════════════════════════════════════════════════════════════════
-
-/**
- * Sign up with email + password + optional username.
- * Returns the new user. Supabase sends a confirmation email.
- */
 export async function apiSignUp(email, password, username = '') {
   if (DEMO_MODE) {
     return { user: { id: 'demo-id', email, user_metadata: { username } }, isDemo: true }
@@ -97,10 +70,6 @@ export async function apiSignUp(email, password, username = '') {
   return data
 }
 
-/**
- * Sign in. Returns { user, session, needsMFA }.
- * needsMFA = true when the user has enrolled TOTP and must reach AAL2.
- */
 export async function apiSignIn(email, password) {
   if (DEMO_MODE) {
     return {
@@ -113,7 +82,6 @@ export async function apiSignIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw new Error(error.message)
 
-  // Check if user needs to step up to AAL2 (has TOTP enrolled)
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
   const needsMFA = aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2'
 
@@ -128,7 +96,6 @@ export async function apiSignIn(email, password) {
   return { user: data.user, session: data.session, needsMFA, factorId }
 }
 
-/** Sign out and clear local session */
 export async function apiSignOut() {
   if (DEMO_MODE) return { error: null }
   const { error } = await supabase.auth.signOut()
@@ -136,28 +103,18 @@ export async function apiSignOut() {
   return { error: null }
 }
 
-/** Get the current persisted session (for page-refresh persistence) */
 export async function apiGetSession() {
   if (DEMO_MODE) return null
   const { data: { session } } = await supabase.auth.getSession()
   return session
 }
 
-/** Subscribe to auth state changes. Returns unsubscribe function. */
 export function apiOnAuthChange(callback) {
   if (DEMO_MODE) return () => {}
   const { data: { subscription } } = supabase.auth.onAuthStateChange(callback)
   return () => subscription.unsubscribe()
 }
 
-// ════════════════════════════════════════════════════════════════════
-//  MFA — TOTP Enrollment & Verification
-// ════════════════════════════════════════════════════════════════════
-
-/**
- * Begin TOTP enrollment. Returns { id, totp: { qr_code, secret } }.
- * In DEMO_MODE returns a fake QR code for UI demonstration.
- */
 export async function apiEnrollMFA() {
   if (DEMO_MODE) {
     return {
@@ -174,10 +131,6 @@ export async function apiEnrollMFA() {
   return data
 }
 
-/**
- * Create a challenge for a given factorId.
- * Must be called before verify.
- */
 export async function apiChallengeMFA(factorId) {
   if (DEMO_MODE) return { id: 'demo-challenge-id' }
   const { data, error } = await supabase.auth.mfa.challenge({ factorId })
@@ -185,10 +138,6 @@ export async function apiChallengeMFA(factorId) {
   return data
 }
 
-/**
- * Verify the TOTP code. Returns updated session on success.
- * DEMO_MODE: '123456' always succeeds.
- */
 export async function apiVerifyMFA(factorId, challengeId, code) {
   if (DEMO_MODE) {
     if (String(code) === '123456') return { success: true }
@@ -204,9 +153,6 @@ export async function apiVerifyMFA(factorId, challengeId, code) {
   return { success: true, data }
 }
 
-/**
- * Unenroll (remove) a TOTP factor.
- */
 export async function apiUnenrollMFA(factorId) {
   if (DEMO_MODE) return { success: true }
   const { error } = await supabase.auth.mfa.unenroll({ factorId })
@@ -214,9 +160,6 @@ export async function apiUnenrollMFA(factorId) {
   return { success: true }
 }
 
-/**
- * Get list of enrolled MFA factors for the current user.
- */
 export async function apiListMFAFactors() {
   if (DEMO_MODE) return []
   const { data, error } = await supabase.auth.mfa.listFactors()

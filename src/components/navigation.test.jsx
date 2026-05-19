@@ -6,25 +6,27 @@ import '@testing-library/jest-dom'
 import { MemoryRouter } from 'react-router-dom'
 import { Routes, Route } from 'react-router-dom'
 
-import { RecipeProvider } from '../context/RecipeContext'
-import { FavoritesProvider } from '../context/FavoritesContext'
+import { NotificationProvider } from '../context/NotificationContext'
+import { RecipeProvider }       from '../context/RecipeContext'
+import { FavoritesProvider }    from '../context/FavoritesContext'
 import NavBar from '../components/NavBar'
 import MFAForm from '../components/MFAForm'
-
-// ============================================
-// LAB 8: Navigation Tests (updated for MFA flow)
-// ============================================
 
 vi.mock('../api/mockApi', () => ({
   apiGetRecipes:  vi.fn(() => Promise.resolve([])),
   apiAddRecipe:   vi.fn((d) => Promise.resolve({ ...d, id: 999 })),
   apiUpdateRecipe: vi.fn((id, d) => Promise.resolve({ ...d, id })),
   apiDeleteRecipe: vi.fn(() => Promise.resolve({ success: true })),
-  // LAB 8 SECURITY: MFA verification — always succeeds in navigation tests
   apiVerifyMFA:   vi.fn(() => Promise.resolve({ success: true, token: 'test-token' })),
 }))
 
-// Lightweight page stubs
+vi.mock('../lib/supabase', () => ({
+  DEMO_MODE: true,
+  supabase: {
+    auth: { onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })) }
+  }
+}))
+
 const StubHome     = () => <div data-testid="page-home">Home Page</div>
 const StubRecipes  = () => <div data-testid="page-recipes">Recipes Page</div>
 const StubProfile  = () => <div data-testid="page-profile">Profile Page</div>
@@ -34,19 +36,21 @@ const StubNotFound = () => <div data-testid="page-notfound">404 Not Found</div>
 function renderWithNav(initialPath = '/') {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
-      <RecipeProvider>
-        <FavoritesProvider>
-          <NavBar />
-          <MFAForm />
-          <Routes>
-            <Route path="/"        element={<StubHome />} />
-            <Route path="/recipes" element={<StubRecipes />} />
-            <Route path="/profile" element={<StubProfile />} />
-            <Route path="/explore" element={<StubExplore />} />
-            <Route path="*"        element={<StubNotFound />} />
-          </Routes>
-        </FavoritesProvider>
-      </RecipeProvider>
+      <NotificationProvider>
+        <RecipeProvider>
+          <FavoritesProvider>
+            <NavBar />
+            <MFAForm />
+            <Routes>
+              <Route path="/"        element={<StubHome />} />
+              <Route path="/recipes" element={<StubRecipes />} />
+              <Route path="/profile" element={<StubProfile />} />
+              <Route path="/explore" element={<StubExplore />} />
+              <Route path="*"        element={<StubNotFound />} />
+            </Routes>
+          </FavoritesProvider>
+        </RecipeProvider>
+      </NotificationProvider>
     </MemoryRouter>
   )
 }

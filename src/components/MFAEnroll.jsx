@@ -1,19 +1,14 @@
 import React, { useState, useCallback } from 'react'
 import { useRecipes } from '../context/RecipeContext'
+import { useNotifications } from '../context/NotificationContext'
 import { apiEnrollMFA, apiChallengeMFA, apiVerifyMFA, apiUnenrollMFA, apiListMFAFactors } from '../api/supabaseApi'
 import { DEMO_MODE } from '../lib/supabase'
 
-// ============================================
-// MFAEnroll — TOTP Authenticator App Enrollment
-// Used inside ProfilePage (Settings section).
-// Flow: Enroll → Show QR → User scans → Verify → Done
-// In DEMO_MODE: shows demo QR and skips real calls
-// ============================================
-
 export default function MFAEnroll() {
-  const { isAuthenticated, addNotification } = useRecipes()
+  const { isAuthenticated } = useRecipes()
+  const { addNotification } = useNotifications()
 
-  const [step,       setStep]       = useState('idle')   // idle | enrolling | verifying | done
+  const [step,       setStep]       = useState('idle')
   const [factorData, setFactorData] = useState(null)
   const [challenge,  setChallenge]  = useState(null)
   const [code,       setCode]       = useState('')

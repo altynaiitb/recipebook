@@ -1,11 +1,5 @@
 import React from 'react'
 
-// ============================================
-// LAB 7 Task 5: Lazy-loaded Modal content
-// This component is dynamically imported by Modal.jsx
-// using React.lazy + Suspense.
-// ============================================
-
 export default function ModalContent({ recipe }) {
   const parts = recipe.ingredients ? recipe.ingredients.split(',').map(s => s.trim()) : []
 

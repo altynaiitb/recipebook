@@ -1,12 +1,6 @@
-// ============================================
-// LAB 6 — Задача 4 + 8: ConfirmModal
-// Модальное окно подтверждения удаления.
-// Управляется через хук useModal из RecipesPage.
-// ============================================
 import React, { useEffect } from 'react'
 
 export default function ConfirmModal({ title, message, onConfirm, onCancel }) {
-  // Закрывать по Escape
   useEffect(() => {
     function onKey(e) {
       if (e.key === 'Escape') onCancel()

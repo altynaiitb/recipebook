@@ -1,14 +1,5 @@
-// ============================================
-// LAB 6 — Задача 5, 7, 8: Mock API Service
-// Имитирует RESTful API для CRUD-операций с рецептами.
-// Хранит данные в localStorage с симуляцией задержки сети.
-// Используется для задач по API Integration и Testing.
-// ============================================
-
 const STORAGE_KEY = 'mock_api_recipes_v1'
 const BASE_DELAY  = 400   // ms — задержка для имитации сети
-
-// ── Вспомогательные функции ────────────────────────────────────────────────
 
 function delay(ms = BASE_DELAY) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -27,14 +18,11 @@ function saveStore(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }
 
-// Случайно имитируем сетевую ошибку (для демонстрации обработки ошибок)
 function maybeThrow(chance = 0) {
   if (Math.random() < chance) {
     throw new Error('Network error: request failed (simulated)')
   }
 }
-
-// ── Инициализация хранилища ────────────────────────────────────────────────
 
 const DEFAULT_DATA = [
   { id: 101, title: 'Pasta Carbonara', category: 'Dinner', rating: 5, tags: ['Meat', 'Traditional'], ingredients: 'Spaghetti, Eggs, Pancetta, Parmesan, Black pepper', description: 'Classic Roman pasta.' },
@@ -51,8 +39,6 @@ function initStore() {
 }
 
 initStore()
-
-// ── API Methods ────────────────────────────────────────────────────────────
 
 /**
  * GET /recipes — получить все рецепты

@@ -1,9 +1,10 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
 import RecipeCard from './RecipeCard'
+import { NotificationProvider } from '../context/NotificationContext'
 import { RecipeProvider } from '../context/RecipeContext'
 import { FavoritesProvider } from '../context/FavoritesContext'
 
@@ -20,11 +21,13 @@ const mockRecipe = {
 
 function renderWithProviders(ui) {
   return render(
-    <RecipeProvider>
-      <FavoritesProvider>
-        {ui}
-      </FavoritesProvider>
-    </RecipeProvider>
+    <NotificationProvider>
+      <RecipeProvider>
+        <FavoritesProvider>
+          {ui}
+        </FavoritesProvider>
+      </RecipeProvider>
+    </NotificationProvider>
   )
 }
 
@@ -60,7 +63,9 @@ describe('RecipeCard — Compound Components (Task 8)', () => {
     expect(screen.getByText('Hide Details')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Hide Details'))
-    expect(screen.queryByText('A delicious test pizza.')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByText('A delicious test pizza.')).not.toBeInTheDocument()
+    })
   })
 
   it('toggles favorite status when heart button is clicked', async () => {

@@ -1,11 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 
-// ============================================
-// Supabase client singleton
-// Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local
-// Without them the app runs in DEMO_MODE (localStorage mock).
-// ============================================
-
 const SUPABASE_URL  = import.meta.env.VITE_SUPABASE_URL  ?? 'https://placeholder.supabase.co'
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY ?? 'placeholder-anon-key'
 

@@ -2,15 +2,6 @@ import React, { useRef, useLayoutEffect, useEffect, useCallback } from 'react'
 import { useRecipes, CATEGORIES, TAGS } from '../context/RecipeContext'
 import { useForm } from '../hooks/useForm'
 
-// ============================================
-// LAB 8: RecipeForm refactored
-// - Controlled fields use useForm hook (title, category, tags, rating, timerMinutes)
-// - Uncontrolled fields (ingredients, description) remain via useRef → Hybrid pattern
-// - Real-time validation via useForm's validationRules
-// - Accepts onClose prop → called after submit or cancel
-// - Success notification handled by RecipeContext (toast system)
-// ============================================
-
 const INITIAL_VALUES = {
   title:        '',
   category:     CATEGORIES[0],

@@ -1,17 +1,9 @@
 import React, { useEffect, useCallback } from 'react'
-import { useRecipes } from '../context/RecipeContext'
-
-// ============================================
-// LAB 8: Global Notification Toast Component
-// Reads notifications from RecipeContext global store.
-// Renders a fixed-position stack of toasts with
-// animated slide-in and auto-dismiss behaviour.
-// ============================================
+import { useNotifications } from '../context/NotificationContext'
 
 export default function NotificationToast() {
-  const { notifications, dismissNotification } = useRecipes()
+  const { notifications, dismissNotification } = useNotifications()
 
-  // Dismiss on Escape key
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'Escape' && notifications.length > 0) {

@@ -2,10 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useFilter } from './useFilter'
 
-// ============================================
-// LAB 8: useFilter hook tests
-// ============================================
-
 const RECIPES = [
   { id: 1, title: 'Pasta Carbonara', category: 'Dinner',    rating: 5, tags: ['Meat', 'Traditional'] },
   { id: 2, title: 'Omelette',        category: 'Breakfast', rating: 4, tags: ['Quick', 'Healthy'] },
@@ -70,7 +66,6 @@ describe('useFilter', () => {
   it('filters by multiple tags (all-of logic)', () => {
     const { result } = renderHook(() => useFilter(RECIPES))
     act(() => { result.current.updateFilter('tags', ['Vegan', 'Quick']) })
-    // Only Banana Smoothie has both tags
     expect(result.current.filtered).toHaveLength(1)
     expect(result.current.filtered[0].id).toBe(5)
   })

@@ -8,7 +8,6 @@ import ScreenProtection  from './components/ScreenProtection'
 import AnimatedPage      from './components/AnimatedPage'
 import { useRecipes }    from './context/RecipeContext'
 
-// LAB 8: Lazy-loaded pages
 const HomePage       = lazy(() => import('./pages/HomePage'))
 const RecipesPage    = lazy(() => import('./pages/RecipesPage'))
 const ProfilePage    = lazy(() => import('./pages/ProfilePage'))

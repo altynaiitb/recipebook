@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
 
 import RecipeForm from './RecipeForm'
+import { NotificationProvider } from '../context/NotificationContext'
 import { RecipeProvider } from '../context/RecipeContext'
 
 const mockAddRecipe    = vi.fn()
@@ -29,9 +30,11 @@ vi.mock('../context/RecipeContext', async (importOriginal) => {
 
 function renderForm() {
   return render(
-    <RecipeProvider>
-      <RecipeForm />
-    </RecipeProvider>
+    <NotificationProvider>
+      <RecipeProvider>
+        <RecipeForm />
+      </RecipeProvider>
+    </NotificationProvider>
   )
 }
 

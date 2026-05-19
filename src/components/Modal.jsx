@@ -1,10 +1,5 @@
 import React, { Suspense, lazy } from 'react'
 
-// ============================================
-// LAB 7 Task 5: Lazy Loading for Modal content
-// ModalContent is loaded dynamically via React.lazy.
-// ============================================
-
 const LazyModalContent = lazy(() => import('./ModalContent'))
 
 export default function Modal({ recipe, onClose }) {

@@ -1,22 +1,11 @@
 import React, { useEffect, useRef } from 'react'
 import { useRecipes } from '../context/RecipeContext'
 
-// ============================================
-// LAB 8 SECURITY: Screenshot Prevention + Watermark
-//
-// 1. PrintScreen key → temporary blur + clears clipboard
-// 2. Right-click (contextmenu) → prevented globally
-// 3. Copy event → appended security notice to clipboard
-// 4. @media print → hides all content (see styles.css)
-// 5. Watermark overlay → visible only when authenticated
-// ============================================
-
 export default function ScreenProtection() {
   const { isAuthenticated } = useRecipes()
   const blurTimerRef = useRef(null)
 
   useEffect(() => {
-    // ── PrintScreen: blur + clear clipboard ──────────────────────────
     const handleKeyUp = (e) => {
       if (e.key === 'PrintScreen' || e.keyCode === 44) {
         navigator.clipboard?.writeText(
@@ -31,13 +20,11 @@ export default function ScreenProtection() {
       }
     }
 
-    // ── Right-click: prevent context menu ────────────────────────────
     const handleContextMenu = (e) => {
       e.preventDefault()
       return false
     }
 
-    // ── Copy: append security watermark to copied text ────────────────
     const handleCopy = (e) => {
       const selection = window.getSelection()?.toString()
       if (selection && e.clipboardData) {
@@ -59,9 +46,8 @@ export default function ScreenProtection() {
       document.removeEventListener('copy', handleCopy)
       clearTimeout(blurTimerRef.current)
     }
-  }, []) // mount once — no deps needed
+  }, [])
 
-  // Watermark shown only when fully authenticated
   if (!isAuthenticated) return null
 
   return (

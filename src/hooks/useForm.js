@@ -72,11 +72,6 @@ export function useForm(initialValues, validationRules = {}) {
       return prev
     })
 
-    // Re-derive synchronously for the return value
-    let syncErrors = {}
-    Object.keys(rulesRef.current).forEach(field => {
-      // We read from initialRef only for sync check; actual state updated above
-    })
     // Return whether currently no errors exist after validation
     return Object.keys(allErrors).length === 0
   }, [runRule])

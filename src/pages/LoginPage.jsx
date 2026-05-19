@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react'
-import { Link, useNavigate, Navigate } from 'react-router-dom'
+import React, { useState, useCallback, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useRecipes } from '../context/RecipeContext'
 import { DEMO_MODE } from '../lib/supabase'
 
@@ -13,13 +13,18 @@ export default function LoginPage() {
   const { signIn, login, isAuthenticated } = useRecipes()
   const navigate = useNavigate()
 
-  const [email,    setEmail]    = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error,    setError]    = useState('')
-  const [loading,  setLoading]  = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  // Already authenticated → redirect to home
-  if (isAuthenticated) return <Navigate to="/" replace />
+  // Safely navigate after authentication without rendering a <Navigate> component
+  // which can cause React to crash if it updates the router state during an existing render.
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault()
@@ -27,7 +32,7 @@ export default function LoginPage() {
     setError(''); setLoading(true)
     try {
       await signIn(email.trim(), password)
-      navigate('/')
+      // Redirection is handled by the <Navigate> component above when isAuthenticated becomes true.
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.')
     } finally {
@@ -47,7 +52,7 @@ export default function LoginPage() {
         {DEMO_MODE && (
           <div className="demo-banner">
             <span>🧪 Demo Mode — Supabase not configured</span>
-            <button className="btn primary demo-quick-btn" onClick={() => { login(); navigate('/') }}>
+            <button type="button" className="btn primary demo-quick-btn" onClick={() => { login() }}>
               Quick Demo Login →
             </button>
           </div>

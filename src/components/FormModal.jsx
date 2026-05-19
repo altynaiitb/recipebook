@@ -1,13 +1,6 @@
 import React, { useEffect, useCallback } from 'react'
 
-// ============================================
-// LAB 8: FormModal — Glassmorphism styled modal
-// wrapper specifically for the Add / Edit Recipe form.
-// Larger than the view modal, scrollable, keyboard-accessible.
-// ============================================
-
 export default function FormModal({ isOpen, onClose, title, children }) {
-  // Close on Escape key
   const handleKey = useCallback((e) => {
     if (e.key === 'Escape') onClose()
   }, [onClose])

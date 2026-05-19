@@ -1,12 +1,4 @@
-// ============================================
-// LAB 6 — Задача 5: Внешний API — TheMealDB
-// Бесплатный публичный API рецептов (без ключа).
-// Документация: https://www.themealdb.com/api.php
-// ============================================
-
 const BASE = 'https://www.themealdb.com/api/json/v1/1'
-
-// ── URL-builders ───────────────────────────────────────────────────────────
 
 /** Поиск рецептов по названию */
 export function searchMealsUrl(query = '') {
@@ -25,8 +17,6 @@ export const categoriesUrl = `${BASE}/categories.php`
 export function mealDetailUrl(id) {
   return `${BASE}/lookup.php?i=${id}`
 }
-
-// ── Data transformers ──────────────────────────────────────────────────────
 
 /**
  * Преобразует объект блюда из TheMealDB в формат нашего приложения.

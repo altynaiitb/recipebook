@@ -3,13 +3,6 @@ import { useRecipes } from '../context/RecipeContext'
 import { apiVerifyMFA, apiChallengeMFA } from '../api/supabaseApi'
 import { DEMO_MODE } from '../lib/supabase'
 
-// ============================================
-// MFAForm — Real TOTP verification via Supabase
-// In DEMO_MODE: accepts '123456' (same as before)
-// In PRODUCTION: calls supabase.auth.mfa.verify()
-//   with the real factor/challenge from Supabase
-// ============================================
-
 export default function MFAForm() {
   const { isPendingMFA, completeMFA, logout, mfaFactorId, currentUser } = useRecipes()
 
@@ -20,7 +13,6 @@ export default function MFAForm() {
 
   const inputRefs = useRef([])
 
-  // Create a fresh MFA challenge when the modal opens
   useEffect(() => {
     if (!isPendingMFA) return
     setDigits(['', '', '', '', '', ''])

@@ -5,7 +5,6 @@ import { useRecipes } from '../context/RecipeContext'
 import { useFavorites } from '../context/FavoritesContext'
 import WindowSize from '../components/WindowSize'
 
-/* Counts up from 0 to `value` when it enters the viewport */
 function AnimatedNumber({ value }) {
   const [display, setDisplay] = useState(0)
   const ref = useRef(null)
@@ -179,7 +178,7 @@ export default function HomePage() {
                 { cls: 'breakfast', icon: '🥞', name: 'Breakfast', count: stats.byCategory.breakfast },
                 { cls: 'lunch',     icon: '🥗', name: 'Lunch',     count: stats.byCategory.lunch },
                 { cls: 'dinner',    icon: '🍝', name: 'Dinner',    count: stats.byCategory.dinner },
-              ].map(({ cls, icon, name, count }) => (
+              ].map(({ cls, icon, name, count }, index) => (
                 <motion.div
                   key={name}
                   className={`category-card ${cls}`}
@@ -190,7 +189,7 @@ export default function HomePage() {
                   <motion.span
                     className="category-icon"
                     animate={{ rotate: [0, -8, 8, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 + Math.random() * 2 }}
+                    transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 + index * 0.5 }}
                   >
                     {icon}
                   </motion.span>

@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { useRecipes } from '../context/RecipeContext'
+import { useTimer } from '../context/TimerContext'
 
 const CookingTimer = React.memo(function CookingTimer() {
 
@@ -18,7 +18,7 @@ const CookingTimer = React.memo(function CookingTimer() {
     resetGlobalTimer,
     setTimerInputMinutes,
     stopAlarm
-  } = useRecipes()
+  } = useTimer()
 
   const mins = Math.floor(timerSeconds / 60)
   const secs = timerSeconds % 60

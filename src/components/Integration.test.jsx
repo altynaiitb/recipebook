@@ -5,8 +5,10 @@ import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
 
 import { BrowserRouter } from 'react-router-dom'
-import { RecipeProvider } from '../context/RecipeContext'
-import { FavoritesProvider } from '../context/FavoritesContext'
+import { NotificationProvider } from '../context/NotificationContext'
+import { RecipeProvider }       from '../context/RecipeContext'
+import { FavoritesProvider }    from '../context/FavoritesContext'
+import { TimerProvider }        from '../context/TimerContext'
 
 const MOCK_RECIPES = [
   { id: 201, title: 'Pancakes',      category: 'Breakfast', rating: 4, tags: ['Quick'],   ingredients: 'Flour, Eggs, Milk',    description: 'Fluffy pancakes.'    },
@@ -23,6 +25,13 @@ vi.mock('../api/mockApi', () => ({
   apiVerifyMFA:    vi.fn(() => Promise.resolve({ success: true, token: 'test-token' })),
 }))
 
+vi.mock('../lib/supabase', () => ({
+  DEMO_MODE: true,
+  supabase: {
+    auth: { onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })) }
+  }
+}))
+
 import RecipesPage         from '../pages/RecipesPage'
 import NavBar              from '../components/NavBar'
 import NotificationToast   from '../components/NotificationToast'
@@ -31,14 +40,18 @@ import MFAForm             from '../components/MFAForm'
 function renderApp() {
   return render(
     <BrowserRouter>
-      <RecipeProvider>
-        <FavoritesProvider>
-          <NavBar />
-          <NotificationToast />
-          <MFAForm />
-          <RecipesPage />
-        </FavoritesProvider>
-      </RecipeProvider>
+      <NotificationProvider>
+        <RecipeProvider>
+          <FavoritesProvider>
+            <TimerProvider>
+              <NavBar />
+              <NotificationToast />
+              <MFAForm />
+              <RecipesPage />
+            </TimerProvider>
+          </FavoritesProvider>
+        </RecipeProvider>
+      </NotificationProvider>
     </BrowserRouter>
   )
 }
@@ -246,21 +259,15 @@ describe('Integration Test — Full Cycle with MFA (Lab 8)', () => {
 
     renderApp()
     await waitFor(() => expect(screen.getByText('Pancakes')).toBeInTheDocument())
-
-    // Logout then Login to trigger MFA
     await user.click(screen.getByText(/Logout/i))
     await waitFor(() => expect(screen.getByText(/Login/i)).toBeInTheDocument())
     await user.click(screen.getByText(/Login/i))
-
     await waitFor(() => expect(screen.getByTestId('mfa-digit-0')).toBeInTheDocument())
-
-    // Enter wrong code
     for (let i = 0; i < 6; i++) {
       fireEvent.change(screen.getByTestId(`mfa-digit-${i}`), { target: { value: '9' } })
     }
     await user.click(screen.getByTestId('mfa-verify-btn'))
 
-    // Error message appears in modal
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument()
     })

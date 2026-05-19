@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useRecipes } from '../context/RecipeContext'
 
@@ -12,15 +12,20 @@ export default function SignUpPage() {
   const { signUp, isAuthenticated } = useRecipes()
   const navigate = useNavigate()
 
-  const [email,    setEmail]    = useState('')
+  const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [confirm,  setConfirm]  = useState('')
-  const [error,    setError]    = useState('')
-  const [success,  setSuccess]  = useState(false)
-  const [loading,  setLoading]  = useState(false)
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  if (isAuthenticated) { navigate('/'); return null }
+  // Safely navigate after authentication without rendering a <Navigate> component
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault()

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, createContext, useContext, Suspense, lazy } from 'react'
+import React, { useState, useCallback, useRef, createContext, useContext } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { useRecipes } from '../context/RecipeContext'
 import { useFavorites } from '../context/FavoritesContext'
@@ -92,16 +92,13 @@ function RecipeCardFooter() {
 
 import { AnimatePresence } from 'framer-motion'
 
-const LazyHeader = lazy(() => Promise.resolve({ default: RecipeCardHeader }))
-const LazyBody   = lazy(() => Promise.resolve({ default: RecipeCardBody }))
-const LazyFooter = lazy(() => Promise.resolve({ default: RecipeCardFooter }))
-
 const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, onDelete, compact = false, index = 0 }) {
   const { deleteRecipe, handleEdit } = useRecipes()
   const { isFavorite, toggleFavorite } = useFavorites()
 
   const liked = isFavorite(recipe.id)
   const [showDetails, setShowDetails] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
 
   const cardRef = useRef(null)
   const rotateX = useMotionValue(0)
@@ -112,6 +109,7 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, onDelete, co
   const glowY   = useTransform(xSpring, [-12, 12], ['0%', '100%'])
 
   const handleMouseMove = useCallback((e) => {
+    setIsHovered(true)
     const rect = cardRef.current?.getBoundingClientRect()
     if (!rect) return
     const x = (e.clientX - rect.left) / rect.width  - 0.5
@@ -121,6 +119,7 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, onDelete, co
   }, [rotateX, rotateY])
 
   const handleMouseLeave = useCallback(() => {
+    setIsHovered(false)
     rotateX.set(0)
     rotateY.set(0)
   }, [rotateX, rotateY])
@@ -133,14 +132,14 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, onDelete, co
     onOpen: onOpen || (() => {}),
     onDelete: onDelete || ((r) => deleteRecipe(r.id)),
     compact, handleEdit,
-    isHovered: false,
+    isHovered,
   }
 
   return (
     <RecipeCardContext.Provider value={contextValue}>
       <motion.div
         ref={cardRef}
-        className={`card ${recipe.removing ? 'removing' : ''} ${compact ? 'compact' : ''}`}
+        className={`card ${recipe.removing ? 'removing' : ''} ${compact ? 'compact' : ''} ${isHovered ? 'hover' : ''}`}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         initial={{ opacity: 0, y: 24, scale: 0.96 }}
@@ -164,11 +163,9 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, onOpen, onDelete, co
             background: `radial-gradient(circle at ${glowX} ${glowY}, rgba(239,107,86,0.18) 0%, transparent 65%)`,
           }}
         />
-        <Suspense fallback={<div style={{ padding: '0.5rem', opacity: 0.4 }}>…</div>}>
-          <LazyHeader />
-          <LazyBody />
-          <LazyFooter />
-        </Suspense>
+        <RecipeCardHeader />
+        <RecipeCardBody />
+        <RecipeCardFooter />
       </motion.div>
     </RecipeCardContext.Provider>
   )

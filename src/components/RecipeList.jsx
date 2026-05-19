@@ -33,7 +33,6 @@ export default function RecipeList({
     )
   }
 
-  // Render Props: call children as a function
   if (typeof children === 'function') {
     return (
       <div className="recipe-list">
@@ -42,7 +41,6 @@ export default function RecipeList({
     )
   }
 
-  // Fallback: if children is not a function, just render them
   return (
     <div className="recipe-list">
       {children}

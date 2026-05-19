@@ -300,7 +300,7 @@ main {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  z-index: 40
+  z-index: 9999;
 }
 
 .modal {
@@ -554,7 +554,8 @@ main {
     transition: opacity .18s, transform .18s
   }
 
-  .card.hover .card-actions {
+  .card.hover .card-actions,
+  .api-card:hover .card-actions {
     opacity: 1;
     transform: translateY(0)
   }
@@ -964,10 +965,6 @@ main {
   animation: fadeInUp 0.3s ease;
 }
 
-/* ============================================
-   LAB 4: NAVIGATION BAR
-   React Router NavLink styling
-   ============================================ */
 .navbar {
   display: flex;
   align-items: center;
@@ -979,7 +976,7 @@ main {
   margin-bottom: 24px;
   position: sticky;
   top: 12px;
-  z-index: 30;
+  z-index: 1000;
 }
 
 .nav-brand {
@@ -2079,10 +2076,6 @@ main {
   }
 }
 
-/* ============================================
-   LAB 8: FORM MODAL (Add / Edit Recipe)
-   ============================================ */
-
 .form-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -2093,7 +2086,7 @@ main {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  z-index: 50;
+  z-index: 9999;
   animation: backdropFadeIn 0.22s ease both;
 }
 
@@ -3028,6 +3021,7 @@ body {
 /* Hero actions */
 .hero-actions {
   display: flex;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 16px;
